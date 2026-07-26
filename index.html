@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>5-Track WAV Audio Player with Seekbar</title>
+  <title>6-Track Audio Player - Track Info Display</title>
   <style>
     * {
       box-sizing: border-box;
@@ -28,23 +28,86 @@
       border-radius: 16px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.5);
       width: 100%;
-      max-width: 600px;
+      max-width: 650px;
     }
 
     h2 {
       text-align: center;
-      margin-bottom: 25px;
+      margin-bottom: 20px;
       color: #00e676;
     }
 
-    /* Master Play Button */
+    /* Folder Load & Reset Section */
+    .folder-section {
+      background: #282828;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      border: 1px dashed #444;
+    }
+
+    .folder-controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .btn-folder {
+      background: #2196f3;
+      color: white;
+      padding: 10px 125px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      display: inline-block;
+      transition: 0.2s;
+    }
+
+    .btn-folder.disabled {
+      background: #444;
+      color: #888;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    .btn-reload {
+      background: #ff9800;
+      color: #121212;
+      border: none;
+      padding: 10px 18px;
+      font-size: 14px;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .btn-reload:hover {
+      background: #fb8c00;
+    }
+
+    .file-input-hidden {
+      display: none;
+    }
+
+    .status-msg {
+      font-size: 13px;
+      color: #aaa;
+    }
+
+    /* Master Controls */
     .main-controls {
       display: flex;
       justify-content: center;
       margin-bottom: 20px;
     }
 
-    .btn {
+    .btn-play {
       border: none;
       padding: 12px 35px;
       font-size: 16px;
@@ -52,22 +115,19 @@
       border-radius: 30px;
       cursor: pointer;
       transition: all 0.2s ease;
-    }
-
-    #masterPlayBtn {
       background: #00e676;
       color: #121212;
       box-shadow: 0 4px 15px rgba(0, 230, 118, 0.3);
     }
 
-    #masterPlayBtn:disabled {
+    .btn-play:disabled {
       background: #444;
       color: #888;
       cursor: not-allowed;
       box-shadow: none;
     }
 
-    /* Progress / Seekbar Section */
+    /* Seekbar Section */
     .seekbar-container {
       background: #2a2a2a;
       padding: 15px;
@@ -91,7 +151,7 @@
       cursor: pointer;
     }
 
-    /* Track List Section */
+    /* Track List */
     .track-list {
       display: flex;
       flex-direction: column;
@@ -105,18 +165,66 @@
       display: flex;
       flex-direction: column;
       gap: 10px;
+      border-left: 4px solid #444;
+      transition: border-color 0.2s;
+    }
+
+    .track-card.playing {
+      border-left-color: #00e676;
     }
 
     .track-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 10px;
     }
 
-    .file-input {
+    .track-title-area {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      overflow: hidden;
+    }
+
+    .track-num {
       font-size: 13px;
-      color: #ccc;
+      font-weight: bold;
+      color: #00e676;
+    }
+
+    .track-file-name {
+      font-size: 13px;
+      color: #e0e0e0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
       max-width: 250px;
+    }
+
+    .file-single-input {
+      font-size: 12px;
+      color: #ccc;
+      max-width: 180px;
+    }
+
+    .file-single-input:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .status-badge {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 12px;
+      background: #333;
+      color: #888;
+    }
+
+    .status-badge.active {
+      background: rgba(0, 230, 118, 0.2);
+      color: #00e676;
+      border: 1px solid #00e676;
     }
 
     .volume-row {
@@ -142,13 +250,25 @@
 <body>
 
   <div class="container">
-    <h2>6-Track Audio Player</h2>
+    <h2>6-Track Audio Synchronizer</h2>
 
-    <div class="main-controls">
-      <button id="masterPlayBtn" class="btn" disabled>▶ Play All</button>
+    <!-- Folder Upload & New Load Area -->
+    <div class="folder-section">
+      <div class="folder-controls">
+        <label for="folderInput" class="btn-folder" id="folderLabel">📁 Select Folder</label>
+        <input type="file" id="folderInput" class="file-input-hidden" webkitdirectory directory multiple>
+        
+        <button id="reloadBtn" class="btn-reload">🔄 New Load / Reset</button>
+      </div>
+      <div class="status-msg" id="statusMsg">Folder select korun ba ekta ekta file upload korun.</div>
     </div>
 
-    <!-- Master Seekbar (Progress Line) -->
+    <!-- Master Play Button -->
+    <div class="main-controls">
+      <button id="masterPlayBtn" class="btn-play" disabled>▶ Play All</button>
+    </div>
+
+    <!-- Seekbar (Timeline) -->
     <div class="seekbar-container">
       <input type="range" id="masterSeekbar" min="0" value="0" step="0.1" disabled>
       <div class="time-info">
@@ -157,36 +277,46 @@
       </div>
     </div>
 
-    <div class="track-list" id="trackList">
-      <!-- 6-ti track card JS diye load hobe -->
-    </div>
+    <!-- 6 Tracks Display -->
+    <div class="track-list" id="trackList"></div>
   </div>
 
   <script>
-    const TOTAL_TRACKS = 5;
+    const TOTAL_TRACKS = 6;
     const trackList = document.getElementById('trackList');
     const masterPlayBtn = document.getElementById('masterPlayBtn');
     const masterSeekbar = document.getElementById('masterSeekbar');
     const currentTimeEl = document.getElementById('currentTime');
     const durationEl = document.getElementById('duration');
+    const folderInput = document.getElementById('folderInput');
+    const folderLabel = document.getElementById('folderLabel');
+    const reloadBtn = document.getElementById('reloadBtn');
+    const statusMsg = document.getElementById('statusMsg');
 
     const tracks = Array.from({ length: TOTAL_TRACKS }, () => ({
       audio: new Audio(),
-      isLoaded: false
+      isLoaded: false,
+      fileName: ''
     }));
 
     let isPlaying = false;
     let maxDuration = 0;
+    let isLocked = false;
 
-    // UI toiri kora 6-ti track-er jonno
+    // UI generation for 6 tracks
     for (let i = 0; i < TOTAL_TRACKS; i++) {
       const card = document.createElement('div');
       card.className = 'track-card';
+      card.id = `card-${i}`;
 
       card.innerHTML = `
         <div class="track-header">
-          <strong>Track ${i + 1}</strong>
-          <input type="file" class="file-input" accept=".wav,audio/wav,audio/*" data-index="${i}">
+          <div class="track-title-area">
+            <span class="track-num">Track ${i + 1}</span>
+            <span class="track-file-name" id="fileName-${i}">No File Selected</span>
+          </div>
+          <span class="status-badge" id="badge-${i}">Empty</span>
+          <input type="file" class="file-single-input" id="input-${i}" accept=".wav,audio/*" data-index="${i}">
         </div>
         <div class="volume-row">
           <span>🔊</span>
@@ -198,29 +328,75 @@
       trackList.appendChild(card);
     }
 
-    // File Upload handling
-    document.querySelectorAll('.file-input').forEach(input => {
+    // Individual File Selection
+    document.querySelectorAll('.file-single-input').forEach(input => {
       input.addEventListener('change', (e) => {
+        if (isLocked) return;
+
         const index = e.target.dataset.index;
         const file = e.target.files[0];
 
         if (file) {
-          const fileURL = URL.createObjectURL(file);
-          const audio = tracks[index].audio;
-          audio.src = fileURL;
-          audio.load();
-          tracks[index].isLoaded = true;
-
-          // Track-er length set wae-er jonno wait kora
-          audio.addEventListener('loadedmetadata', () => {
-            updateMaxDuration();
-            checkPlayButtonState();
-          });
+          loadSingleAudio(file, index);
+          checkPlayButtonState();
         }
       });
     });
 
-    // Sub-tracks-er moddhe sobcheye boro Duration khuje ber kora
+    function loadSingleAudio(file, index) {
+      const fileURL = URL.createObjectURL(file);
+      const audio = tracks[index].audio;
+      audio.src = fileURL;
+      audio.load();
+      tracks[index].isLoaded = true;
+      tracks[index].fileName = file.name;
+
+      // Update File Name and Badge Text
+      document.getElementById(`fileName-${index}`).innerText = file.name;
+      document.getElementById(`badge-${index}`).innerText = "Loaded";
+
+      audio.addEventListener('loadedmetadata', () => {
+        updateMaxDuration();
+        checkPlayButtonState();
+      });
+    }
+
+    // Folder selection handling
+    folderInput.addEventListener('change', (e) => {
+      if (isLocked) return;
+
+      const files = Array.from(e.target.files);
+      const audioFiles = files.filter(file => file.type.startsWith('audio/') || file.name.match(/\.(wav|mp3|ogg|flac|aac)$/i));
+
+      if (audioFiles.length === 0) {
+        statusMsg.innerText = "❌ Selected folder-e kono audio file paowa jayni!";
+        statusMsg.style.color = "#ff5252";
+        return;
+      }
+
+      const filesToLoad = audioFiles.slice(0, TOTAL_TRACKS);
+      
+      filesToLoad.forEach((file, index) => {
+        loadSingleAudio(file, index);
+      });
+
+      lockAllInputs();
+      statusMsg.innerText = `✅ Folder load hoyegeche (${filesToLoad.length}টি File). Play click korun!`;
+      statusMsg.style.color = "#00e676";
+    });
+
+    // Lock function
+    function lockAllInputs() {
+      isLocked = true;
+      folderInput.disabled = true;
+      folderLabel.classList.add('disabled');
+      folderLabel.innerText = "🔒 Locked";
+
+      document.querySelectorAll('.file-single-input').forEach(input => {
+        input.style.display = 'none'; // Lock o hidden kore dewa
+      });
+    }
+
     function updateMaxDuration() {
       maxDuration = 0;
       tracks.forEach(t => {
@@ -234,7 +410,7 @@
       durationEl.innerText = formatTime(maxDuration);
     }
 
-    // Volume Slider handling
+    // Individual Volume Controls
     document.querySelectorAll('.vol-slider').forEach(slider => {
       slider.addEventListener('input', (e) => {
         const index = e.target.dataset.index;
@@ -244,18 +420,34 @@
       });
     });
 
-    // Master Play/Pause Toggle
+    // Master Play/Pause
     masterPlayBtn.addEventListener('click', () => {
+      if (!isLocked) {
+        lockAllInputs();
+      }
+
       if (!isPlaying) {
-        tracks.forEach(t => {
-          if (t.isLoaded) t.audio.play();
+        tracks.forEach((t, i) => {
+          if (t.isLoaded) {
+            t.audio.play();
+            // Update Card Visual & Badge Status
+            document.getElementById(`badge-${i}`).innerText = "▶ Playing";
+            document.getElementById(`badge-${i}`).classList.add('active');
+            document.getElementById(`card-${i}`).classList.add('playing');
+          }
         });
         masterPlayBtn.innerText = '⏸ Pause All';
         masterPlayBtn.style.background = '#ff5252';
         isPlaying = true;
       } else {
-        tracks.forEach(t => {
-          if (t.isLoaded) t.audio.pause();
+        tracks.forEach((t, i) => {
+          if (t.isLoaded) {
+            t.audio.pause();
+            // Update Card Visual & Badge Status
+            document.getElementById(`badge-${i}`).innerText = "⏸ Paused";
+            document.getElementById(`badge-${i}`).classList.remove('active');
+            document.getElementById(`card-${i}`).classList.remove('playing');
+          }
         });
         masterPlayBtn.innerText = '▶ Play All';
         masterPlayBtn.style.background = '#00e676';
@@ -263,7 +455,7 @@
       }
     });
 
-    // Seekbar-e click kore Age/Piche newar jonno code
+    // Seekbar Sync
     masterSeekbar.addEventListener('input', (e) => {
       const seekTime = parseFloat(e.target.value);
       tracks.forEach(t => {
@@ -274,7 +466,6 @@
       currentTimeEl.innerText = formatTime(seekTime);
     });
 
-    // Timeline Sync (Audio cholale seekbar r time smoothly sarse emne update hobe)
     tracks[0].audio.addEventListener('timeupdate', () => {
       const activeTrack = tracks.find(t => t.isLoaded);
       if (activeTrack && isPlaying) {
@@ -283,7 +474,11 @@
       }
     });
 
-    // Time Format function (00:00 convert kora)
+    // Reload Page
+    reloadBtn.addEventListener('click', () => {
+      window.location.reload();
+    });
+
     function formatTime(seconds) {
       if (isNaN(seconds)) return "00:00";
       const min = Math.floor(seconds / 60);
@@ -291,7 +486,6 @@
       return `${min < 10 ? '0' : ''}${min}:${sec < 10 ? '0' : ''}${sec}`;
     }
 
-    // Button & Seekbar status handle
     function checkPlayButtonState() {
       const hasLoadedTrack = tracks.some(t => t.isLoaded);
       masterPlayBtn.disabled = !hasLoadedTrack;
