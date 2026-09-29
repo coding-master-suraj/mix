@@ -1,497 +1,1785 @@
+```html
 <!DOCTYPE html>
 <html lang="bn">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>6-Track Audio Player - Track Info Display</title>
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    body {
-      background: #121212;
-      color: #fff;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      padding: 20px;
-    }
+<title>Multi Track Audio Synchronizer</title>
 
-    .container {
-      background: #1e1e1e;
-      padding: 30px;
-      border-radius: 16px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-      width: 100%;
-      max-width: 650px;
-    }
+<!-- ZIP Reader -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
-    h2 {
-      text-align: center;
-      margin-bottom: 20px;
-      color: #00e676;
-    }
+<style>
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+  font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
+}
 
-    /* Folder Load & Reset Section */
-    .folder-section {
-      background: #282828;
-      padding: 15px;
-      border-radius: 10px;
-      margin-bottom: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      border: 1px dashed #444;
-    }
+body{
+  background:#121212;
+  color:#fff;
+  min-height:100vh;
+  padding:20px;
+}
 
-    .folder-controls {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
+.container{
+  background:#1e1e1e;
+  padding:30px;
+  border-radius:16px;
+  box-shadow:0 10px 30px rgba(0,0,0,.5);
+  width:100%;
+  max-width:850px;
+  margin:auto;
+}
 
-    .btn-folder {
-      background: #2196f3;
-      color: white;
-      padding: 10px 125px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 14px;
-      display: inline-block;
-      transition: 0.2s;
-    }
+h2{
+  text-align:center;
+  margin-bottom:20px;
+  color:#00e676;
+}
 
-    .btn-folder.disabled {
-      background: #444;
-      color: #888;
-      cursor: not-allowed;
-      opacity: 0.6;
-    }
+/* =========================
+   LOAD SECTION
+========================= */
 
-    .btn-reload {
-      background: #ff9800;
-      color: #121212;
-      border: none;
-      padding: 10px 18px;
-      font-size: 14px;
-      font-weight: bold;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: 0.2s;
-    }
+.folder-section{
+  background:#282828;
+  padding:15px;
+  border-radius:10px;
+  margin-bottom:20px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  border:1px dashed #444;
+}
 
-    .btn-reload:hover {
-      background: #fb8c00;
-    }
+.folder-controls{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap:wrap;
+}
 
-    .file-input-hidden {
-      display: none;
-    }
+.btn-folder{
+  background:#2196f3;
+  color:white;
+  padding:10px 22px;
+  border-radius:8px;
+  cursor:pointer;
+  font-weight:600;
+  font-size:14px;
+  display:inline-block;
+  transition:.2s;
+}
 
-    .status-msg {
-      font-size: 13px;
-      color: #aaa;
-    }
+.btn-folder:hover{
+  background:#1976d2;
+}
 
-    /* Master Controls */
-    .main-controls {
-      display: flex;
-      justify-content: center;
-      margin-bottom: 20px;
-    }
+.btn-file{
+  background:#00a86b;
+}
 
-    .btn-play {
-      border: none;
-      padding: 12px 35px;
-      font-size: 16px;
-      font-weight: bold;
-      border-radius: 30px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      background: #00e676;
-      color: #121212;
-      box-shadow: 0 4px 15px rgba(0, 230, 118, 0.3);
-    }
+.btn-file:hover{
+  background:#008f5b;
+}
 
-    .btn-play:disabled {
-      background: #444;
-      color: #888;
-      cursor: not-allowed;
-      box-shadow: none;
-    }
+.btn-folder.disabled{
+  background:#444;
+  color:#888;
+  cursor:not-allowed;
+  opacity:.6;
+}
 
-    /* Seekbar Section */
-    .seekbar-container {
-      background: #2a2a2a;
-      padding: 15px;
-      border-radius: 10px;
-      margin-bottom: 25px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
+.btn-reload{
+  background:#ff9800;
+  color:#121212;
+  border:none;
+  padding:10px 18px;
+  font-size:14px;
+  font-weight:bold;
+  border-radius:8px;
+  cursor:pointer;
+  transition:.2s;
+}
 
-    .time-info {
-      display: flex;
-      justify-content: space-between;
-      font-size: 13px;
-      color: #aaa;
-    }
+.btn-reload:hover{
+  background:#fb8c00;
+}
 
-    #masterSeekbar {
-      width: 100%;
-      accent-color: #00e676;
-      cursor: pointer;
-    }
+.file-input-hidden{
+  display:none;
+}
 
-    /* Track List */
-    .track-list {
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-    }
+.status-msg{
+  font-size:13px;
+  color:#aaa;
+}
 
-    .track-card {
-      background: #2a2a2a;
-      padding: 15px;
-      border-radius: 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      border-left: 4px solid #444;
-      transition: border-color 0.2s;
-    }
+/* =========================
+   MASTER CONTROLS
+========================= */
 
-    .track-card.playing {
-      border-left-color: #00e676;
-    }
+.main-controls{
+  display:flex;
+  justify-content:center;
+  margin-bottom:20px;
+}
 
-    .track-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-    }
+.btn-play{
+  border:none;
+  padding:12px 35px;
+  font-size:16px;
+  font-weight:bold;
+  border-radius:30px;
+  cursor:pointer;
+  transition:all .2s ease;
+  background:#00e676;
+  color:#121212;
+  box-shadow:0 4px 15px rgba(0,230,118,.3);
+}
 
-    .track-title-area {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      overflow: hidden;
-    }
+.btn-play:disabled{
+  background:#444;
+  color:#888;
+  cursor:not-allowed;
+  box-shadow:none;
+}
 
-    .track-num {
-      font-size: 13px;
-      font-weight: bold;
-      color: #00e676;
-    }
+/* =========================
+   SEEKBAR
+========================= */
 
-    .track-file-name {
-      font-size: 13px;
-      color: #e0e0e0;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 250px;
-    }
+.seekbar-container{
+  background:#2a2a2a;
+  padding:15px;
+  border-radius:10px;
+  margin-bottom:25px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
 
-    .file-single-input {
-      font-size: 12px;
-      color: #ccc;
-      max-width: 180px;
-    }
+.time-info{
+  display:flex;
+  justify-content:space-between;
+  font-size:13px;
+  color:#aaa;
+}
 
-    .file-single-input:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
+#masterSeekbar{
+  width:100%;
+  accent-color:#00e676;
+  cursor:pointer;
+}
 
-    .status-badge {
-      font-size: 11px;
-      padding: 3px 8px;
-      border-radius: 12px;
-      background: #333;
-      color: #888;
-    }
+/* =========================
+   TRACK LIST
+========================= */
 
-    .status-badge.active {
-      background: rgba(0, 230, 118, 0.2);
-      color: #00e676;
-      border: 1px solid #00e676;
-    }
+.track-list{
+  display:flex;
+  flex-direction:column;
+  gap:15px;
+}
 
-    .volume-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
+.track-card{
+  background:#2a2a2a;
+  padding:15px;
+  border-radius:10px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  border-left:4px solid #444;
+  transition:border-color .2s, box-shadow .2s;
+}
 
-    .volume-row input[type="range"] {
-      width: 100%;
-      accent-color: #00e676;
-      cursor: pointer;
-    }
+.track-card.playing{
+  border-left-color:#00e676;
+  box-shadow:0 0 12px rgba(0,230,118,.08);
+}
 
-    .vol-text {
-      font-size: 12px;
-      width: 40px;
-      text-align: right;
-      color: #bbb;
-    }
-  </style>
+.track-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+}
+
+.track-title-area{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+  overflow:hidden;
+  flex:1;
+}
+
+.track-num{
+  font-size:13px;
+  font-weight:bold;
+  color:#00e676;
+}
+
+.track-file-name{
+  font-size:13px;
+  color:#e0e0e0;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.status-badge{
+  flex-shrink:0;
+  font-size:11px;
+  padding:3px 8px;
+  border-radius:12px;
+  background:#333;
+  color:#888;
+}
+
+.status-badge.active{
+  background:rgba(0,230,118,.2);
+  color:#00e676;
+  border:1px solid #00e676;
+}
+
+.volume-row{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.volume-row input[type="range"]{
+  width:100%;
+  accent-color:#00e676;
+  cursor:pointer;
+}
+
+.vol-text{
+  font-size:12px;
+  width:40px;
+  text-align:right;
+  color:#bbb;
+}
+
+/* =========================
+   LOADING
+========================= */
+
+.loading-box{
+  text-align:center;
+  padding:20px;
+  color:#aaa;
+  display:none;
+}
+
+.spinner{
+  width:30px;
+  height:30px;
+  border:3px solid #444;
+  border-top-color:#00e676;
+  border-radius:50%;
+  animation:spin .8s linear infinite;
+  margin:0 auto 10px;
+}
+
+@keyframes spin{
+  to{
+    transform:rotate(360deg);
+  }
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media(max-width:600px){
+
+  body{
+    padding:10px;
+  }
+
+  .container{
+    padding:18px;
+  }
+
+  .folder-controls{
+    flex-direction:column;
+    align-items:stretch;
+  }
+
+  .btn-folder,
+  .btn-reload{
+    text-align:center;
+    width:100%;
+  }
+
+  .track-header{
+    align-items:flex-start;
+  }
+
+  .status-badge{
+    display:none;
+  }
+}
+</style>
 </head>
+
 <body>
 
-  <div class="container">
-    <h2>6-Track Audio Synchronizer</h2>
+<div class="container">
 
-    <!-- Folder Upload & New Load Area -->
-    <div class="folder-section">
-      <div class="folder-controls">
-        <label for="folderInput" class="btn-folder" id="folderLabel">📁 Select Folder</label>
-        <input type="file" id="folderInput" class="file-input-hidden" webkitdirectory directory multiple>
-        
-        <button id="reloadBtn" class="btn-reload">🔄 New Load / Reset</button>
-      </div>
-      <div class="status-msg" id="statusMsg">Folder select korun ba ekta ekta file upload korun.</div>
+  <h2>🎧 Multi-Track Audio Synchronizer</h2>
+
+  <!-- =========================
+       LOAD CONTROLS
+  ========================== -->
+
+  <div class="folder-section">
+
+    <div class="folder-controls">
+
+      <!-- Folder -->
+      <label
+        for="folderInput"
+        class="btn-folder"
+        id="folderLabel"
+      >
+        📁 Select Folder
+      </label>
+
+      <input
+        type="file"
+        id="folderInput"
+        class="file-input-hidden"
+        webkitdirectory
+        directory
+        multiple
+      >
+
+      <!-- Files + ZIP -->
+      <label
+        for="fileInput"
+        class="btn-folder btn-file"
+        id="fileLabel"
+      >
+        🎵 Select Files / ZIP
+      </label>
+
+      <input
+        type="file"
+        id="fileInput"
+        class="file-input-hidden"
+        multiple
+        accept="audio/*,.wav,.mp3,.ogg,.flac,.aac,.m4a,.webm,.opus,.zip"
+      >
+
+      <!-- Reset -->
+      <button
+        id="reloadBtn"
+        class="btn-reload"
+      >
+        🔄 New Load / Reset
+      </button>
+
     </div>
 
-    <!-- Master Play Button -->
-    <div class="main-controls">
-      <button id="masterPlayBtn" class="btn-play" disabled>▶ Play All</button>
+    <div
+      class="status-msg"
+      id="statusMsg"
+    >
+      Folder অথবা Audio File / ZIP select করুন।
     </div>
 
-    <!-- Seekbar (Timeline) -->
-    <div class="seekbar-container">
-      <input type="range" id="masterSeekbar" min="0" value="0" step="0.1" disabled>
-      <div class="time-info">
-        <span id="currentTime">00:00</span>
-        <span id="duration">00:00</span>
-      </div>
-    </div>
-
-    <!-- 6 Tracks Display -->
-    <div class="track-list" id="trackList"></div>
   </div>
 
-  <script>
-    const TOTAL_TRACKS = 6;
-    const trackList = document.getElementById('trackList');
-    const masterPlayBtn = document.getElementById('masterPlayBtn');
-    const masterSeekbar = document.getElementById('masterSeekbar');
-    const currentTimeEl = document.getElementById('currentTime');
-    const durationEl = document.getElementById('duration');
-    const folderInput = document.getElementById('folderInput');
-    const folderLabel = document.getElementById('folderLabel');
-    const reloadBtn = document.getElementById('reloadBtn');
-    const statusMsg = document.getElementById('statusMsg');
 
-    const tracks = Array.from({ length: TOTAL_TRACKS }, () => ({
-      audio: new Audio(),
-      isLoaded: false,
-      fileName: ''
-    }));
+  <!-- Loading -->
 
-    let isPlaying = false;
-    let maxDuration = 0;
-    let isLocked = false;
+  <div
+    class="loading-box"
+    id="loadingBox"
+  >
 
-    // UI generation for 6 tracks
-    for (let i = 0; i < TOTAL_TRACKS; i++) {
-      const card = document.createElement('div');
-      card.className = 'track-card';
-      card.id = `card-${i}`;
+    <div class="spinner"></div>
 
-      card.innerHTML = `
-        <div class="track-header">
-          <div class="track-title-area">
-            <span class="track-num">Track ${i + 1}</span>
-            <span class="track-file-name" id="fileName-${i}">No File Selected</span>
-          </div>
-          <span class="status-badge" id="badge-${i}">Empty</span>
-          <input type="file" class="file-single-input" id="input-${i}" accept=".wav,audio/*" data-index="${i}">
-        </div>
-        <div class="volume-row">
-          <span>🔊</span>
-          <input type="range" class="vol-slider" min="0" max="1" step="0.01" value="0.8" data-index="${i}">
-          <span class="vol-text" id="volText-${i}">80%</span>
-        </div>
-      `;
+    <div id="loadingText">
+      Audio load হচ্ছে...
+    </div>
 
-      trackList.appendChild(card);
+  </div>
+
+
+  <!-- =========================
+       MASTER PLAY
+  ========================== -->
+
+  <div class="main-controls">
+
+    <button
+      id="masterPlayBtn"
+      class="btn-play"
+      disabled
+    >
+      ▶ Play All
+    </button>
+
+  </div>
+
+
+  <!-- =========================
+       MASTER SEEKBAR
+  ========================== -->
+
+  <div class="seekbar-container">
+
+    <input
+      type="range"
+      id="masterSeekbar"
+      min="0"
+      max="0"
+      value="0"
+      step="0.1"
+      disabled
+    >
+
+    <div class="time-info">
+
+      <span id="currentTime">
+        00:00
+      </span>
+
+      <span id="duration">
+        00:00
+      </span>
+
+    </div>
+
+  </div>
+
+
+  <!-- =========================
+       DYNAMIC PLAYERS
+  ========================== -->
+
+  <div
+    class="track-list"
+    id="trackList"
+  ></div>
+
+</div>
+
+
+<script>
+
+/* =========================================================
+   CONFIG
+========================================================= */
+
+const AUDIO_EXTENSIONS = [
+  'wav',
+  'mp3',
+  'ogg',
+  'flac',
+  'aac',
+  'm4a',
+  'webm',
+  'opus'
+];
+
+
+/* =========================================================
+   ELEMENTS
+========================================================= */
+
+const trackList =
+  document.getElementById('trackList');
+
+const masterPlayBtn =
+  document.getElementById('masterPlayBtn');
+
+const masterSeekbar =
+  document.getElementById('masterSeekbar');
+
+const currentTimeEl =
+  document.getElementById('currentTime');
+
+const durationEl =
+  document.getElementById('duration');
+
+const folderInput =
+  document.getElementById('folderInput');
+
+const fileInput =
+  document.getElementById('fileInput');
+
+const folderLabel =
+  document.getElementById('folderLabel');
+
+const fileLabel =
+  document.getElementById('fileLabel');
+
+const reloadBtn =
+  document.getElementById('reloadBtn');
+
+const statusMsg =
+  document.getElementById('statusMsg');
+
+const loadingBox =
+  document.getElementById('loadingBox');
+
+const loadingText =
+  document.getElementById('loadingText');
+
+
+/* =========================================================
+   STATE
+========================================================= */
+
+let tracks = [];
+
+let isPlaying = false;
+
+let maxDuration = 0;
+
+let isLocked = false;
+
+
+/* =========================================================
+   FILE TYPE
+========================================================= */
+
+function isAudioFile(file){
+
+  if(!file) return false;
+
+  if(
+    file.type &&
+    file.type.startsWith('audio/')
+  ){
+    return true;
+  }
+
+  const ext =
+    file.name
+      .split('.')
+      .pop()
+      .toLowerCase();
+
+  return AUDIO_EXTENSIONS.includes(ext);
+}
+
+
+function isZipFile(file){
+
+  if(!file) return false;
+
+  return (
+    file.type === 'application/zip' ||
+    file.type === 'application/x-zip-compressed' ||
+    file.name.toLowerCase().endsWith('.zip')
+  );
+}
+
+
+/* =========================================================
+   FOLDER SELECT
+========================================================= */
+
+folderInput.addEventListener(
+  'change',
+  async function(e){
+
+    if(isLocked) return;
+
+    const files =
+      Array.from(e.target.files);
+
+    if(!files.length){
+
+      statusMsg.innerText =
+        '❌ কোনো file পাওয়া যায়নি।';
+
+      return;
     }
 
-    // Individual File Selection
-    document.querySelectorAll('.file-single-input').forEach(input => {
-      input.addEventListener('change', (e) => {
-        if (isLocked) return;
+    await loadFolderFiles(files);
 
-        const index = e.target.dataset.index;
-        const file = e.target.files[0];
+  }
+);
 
-        if (file) {
-          loadSingleAudio(file, index);
-          checkPlayButtonState();
+
+/* =========================================================
+   LOAD FOLDER
+========================================================= */
+
+async function loadFolderFiles(files){
+
+  showLoading(
+    'Folder scan হচ্ছে...'
+  );
+
+  const audioFiles =
+    files.filter(
+      file => isAudioFile(file)
+    );
+
+  /*
+    Folder-এর ভিতরে যদি ZIP থাকে,
+    ZIP-এর audio-ও নেওয়া হবে।
+  */
+
+  const zipFiles =
+    files.filter(
+      file => isZipFile(file)
+    );
+
+  let finalFiles =
+    [...audioFiles];
+
+
+  /* =========================
+     ZIP EXTRACTION
+  ========================== */
+
+  for(
+    let i = 0;
+    i < zipFiles.length;
+    i++
+  ){
+
+    const zipFile =
+      zipFiles[i];
+
+    loadingText.innerText =
+      `ZIP read হচ্ছে: ${zipFile.name}`;
+
+
+    try{
+
+      const zip =
+        await JSZip.loadAsync(
+          zipFile
+        );
+
+      const entries =
+        Object.values(zip.files);
+
+
+      for(
+        const entry of entries
+      ){
+
+        if(entry.dir){
+          continue;
         }
-      });
-    });
 
-    function loadSingleAudio(file, index) {
-      const fileURL = URL.createObjectURL(file);
-      const audio = tracks[index].audio;
-      audio.src = fileURL;
-      audio.load();
-      tracks[index].isLoaded = true;
-      tracks[index].fileName = file.name;
 
-      // Update File Name and Badge Text
-      document.getElementById(`fileName-${index}`).innerText = file.name;
-      document.getElementById(`badge-${index}`).innerText = "Loaded";
+        const ext =
+          entry.name
+            .split('.')
+            .pop()
+            .toLowerCase();
 
-      audio.addEventListener('loadedmetadata', () => {
-        updateMaxDuration();
-        checkPlayButtonState();
-      });
-    }
 
-    // Folder selection handling
-    folderInput.addEventListener('change', (e) => {
-      if (isLocked) return;
-
-      const files = Array.from(e.target.files);
-      const audioFiles = files.filter(file => file.type.startsWith('audio/') || file.name.match(/\.(wav|mp3|ogg|flac|aac)$/i));
-
-      if (audioFiles.length === 0) {
-        statusMsg.innerText = "❌ Selected folder-e kono audio file paowa jayni!";
-        statusMsg.style.color = "#ff5252";
-        return;
-      }
-
-      const filesToLoad = audioFiles.slice(0, TOTAL_TRACKS);
-      
-      filesToLoad.forEach((file, index) => {
-        loadSingleAudio(file, index);
-      });
-
-      lockAllInputs();
-      statusMsg.innerText = `✅ Folder load hoyegeche (${filesToLoad.length}টি File). Play click korun!`;
-      statusMsg.style.color = "#00e676";
-    });
-
-    // Lock function
-    function lockAllInputs() {
-      isLocked = true;
-      folderInput.disabled = true;
-      folderLabel.classList.add('disabled');
-      folderLabel.innerText = "🔒 Locked";
-
-      document.querySelectorAll('.file-single-input').forEach(input => {
-        input.style.display = 'none'; // Lock o hidden kore dewa
-      });
-    }
-
-    function updateMaxDuration() {
-      maxDuration = 0;
-      tracks.forEach(t => {
-        if (t.isLoaded && !isNaN(t.audio.duration)) {
-          if (t.audio.duration > maxDuration) {
-            maxDuration = t.audio.duration;
-          }
+        if(
+          !AUDIO_EXTENSIONS.includes(ext)
+        ){
+          continue;
         }
-      });
-      masterSeekbar.max = maxDuration;
-      durationEl.innerText = formatTime(maxDuration);
+
+
+        const blob =
+          await entry.async('blob');
+
+
+        const mime =
+          getAudioMime(ext);
+
+
+        const audioBlob =
+          new Blob(
+            [blob],
+            {type:mime}
+          );
+
+
+        const fileName =
+          entry.name
+            .split('/')
+            .pop();
+
+
+        const extractedFile =
+          new File(
+            [audioBlob],
+            fileName,
+            {type:mime}
+          );
+
+
+        finalFiles.push(
+          extractedFile
+        );
+
+      }
+
+    }
+    catch(error){
+
+      console.error(
+        'ZIP error:',
+        error
+      );
+
     }
 
-    // Individual Volume Controls
-    document.querySelectorAll('.vol-slider').forEach(slider => {
-      slider.addEventListener('input', (e) => {
-        const index = e.target.dataset.index;
-        const value = e.target.value;
-        tracks[index].audio.volume = value;
-        document.getElementById(`volText-${index}`).innerText = `${Math.round(value * 100)}%`;
-      });
-    });
+  }
 
-    // Master Play/Pause
-    masterPlayBtn.addEventListener('click', () => {
-      if (!isLocked) {
-        lockAllInputs();
-      }
 
-      if (!isPlaying) {
-        tracks.forEach((t, i) => {
-          if (t.isLoaded) {
-            t.audio.play();
-            // Update Card Visual & Badge Status
-            document.getElementById(`badge-${i}`).innerText = "▶ Playing";
-            document.getElementById(`badge-${i}`).classList.add('active');
-            document.getElementById(`card-${i}`).classList.add('playing');
+  if(!finalFiles.length){
+
+    hideLoading();
+
+    statusMsg.innerText =
+      '❌ Folder-এর ভিতরে কোনো Audio পাওয়া যায়নি।';
+
+    statusMsg.style.color =
+      '#ff5252';
+
+    return;
+
+  }
+
+
+  /* =========================
+     LOAD ALL
+  ========================== */
+
+  clearExistingTracks();
+
+
+  finalFiles.forEach(
+    (file,index) => {
+
+      createTrack(
+        file,
+        index
+      );
+
+    }
+  );
+
+
+  lockAllInputs();
+
+
+  statusMsg.innerText =
+    `✅ Folder-এর ${finalFiles.length}টি Audio-এর জন্য ${finalFiles.length}টি Player তৈরি হয়েছে।`;
+
+  statusMsg.style.color =
+    '#00e676';
+
+
+  hideLoading();
+
+}
+
+
+/* =========================================================
+   FILE / ZIP SELECT
+========================================================= */
+
+fileInput.addEventListener(
+  'change',
+  async function(e){
+
+    if(isLocked) return;
+
+    const selectedFiles =
+      Array.from(e.target.files);
+
+    if(!selectedFiles.length){
+
+      return;
+
+    }
+
+
+    showLoading(
+      'Selected files process হচ্ছে...'
+    );
+
+
+    /*
+      Normal audio files
+    */
+
+    let finalFiles =
+      selectedFiles.filter(
+        file => isAudioFile(file)
+      );
+
+
+    /*
+      ZIP files
+    */
+
+    const zipFiles =
+      selectedFiles.filter(
+        file => isZipFile(file)
+      );
+
+
+    for(
+      let i = 0;
+      i < zipFiles.length;
+      i++
+    ){
+
+      const zipFile =
+        zipFiles[i];
+
+      loadingText.innerText =
+        `ZIP extract হচ্ছে: ${zipFile.name}`;
+
+
+      try{
+
+        const zip =
+          await JSZip.loadAsync(
+            zipFile
+          );
+
+
+        const entries =
+          Object.values(zip.files);
+
+
+        for(
+          const entry of entries
+        ){
+
+          if(entry.dir){
+            continue;
           }
-        });
-        masterPlayBtn.innerText = '⏸ Pause All';
-        masterPlayBtn.style.background = '#ff5252';
-        isPlaying = true;
-      } else {
-        tracks.forEach((t, i) => {
-          if (t.isLoaded) {
-            t.audio.pause();
-            // Update Card Visual & Badge Status
-            document.getElementById(`badge-${i}`).innerText = "⏸ Paused";
-            document.getElementById(`badge-${i}`).classList.remove('active');
-            document.getElementById(`card-${i}`).classList.remove('playing');
-          }
-        });
-        masterPlayBtn.innerText = '▶ Play All';
-        masterPlayBtn.style.background = '#00e676';
-        isPlaying = false;
-      }
-    });
 
-    // Seekbar Sync
-    masterSeekbar.addEventListener('input', (e) => {
-      const seekTime = parseFloat(e.target.value);
-      tracks.forEach(t => {
-        if (t.isLoaded) {
-          t.audio.currentTime = seekTime;
+
+          const ext =
+            entry.name
+              .split('.')
+              .pop()
+              .toLowerCase();
+
+
+          if(
+            !AUDIO_EXTENSIONS.includes(ext)
+          ){
+            continue;
+          }
+
+
+          const blob =
+            await entry.async('blob');
+
+
+          const mime =
+            getAudioMime(ext);
+
+
+          const audioBlob =
+            new Blob(
+              [blob],
+              {type:mime}
+            );
+
+
+          const fileName =
+            entry.name
+              .split('/')
+              .pop();
+
+
+          const extractedFile =
+            new File(
+              [audioBlob],
+              fileName,
+              {type:mime}
+            );
+
+
+          finalFiles.push(
+            extractedFile
+          );
+
         }
-      });
-      currentTimeEl.innerText = formatTime(seekTime);
-    });
 
-    tracks[0].audio.addEventListener('timeupdate', () => {
-      const activeTrack = tracks.find(t => t.isLoaded);
-      if (activeTrack && isPlaying) {
-        masterSeekbar.value = activeTrack.audio.currentTime;
-        currentTimeEl.innerText = formatTime(activeTrack.audio.currentTime);
       }
-    });
+      catch(error){
 
-    // Reload Page
-    reloadBtn.addEventListener('click', () => {
-      window.location.reload();
-    });
+        console.error(
+          'ZIP extraction error:',
+          error
+        );
 
-    function formatTime(seconds) {
-      if (isNaN(seconds)) return "00:00";
-      const min = Math.floor(seconds / 60);
-      const sec = Math.floor(seconds % 60);
-      return `${min < 10 ? '0' : ''}${min}:${sec < 10 ? '0' : ''}${sec}`;
+      }
+
     }
 
-    function checkPlayButtonState() {
-      const hasLoadedTrack = tracks.some(t => t.isLoaded);
-      masterPlayBtn.disabled = !hasLoadedTrack;
-      masterSeekbar.disabled = !hasLoadedTrack;
+
+    if(!finalFiles.length){
+
+      hideLoading();
+
+      statusMsg.innerText =
+        '❌ কোনো valid Audio পাওয়া যায়নি।';
+
+      statusMsg.style.color =
+        '#ff5252';
+
+      return;
+
     }
-  </script>
+
+
+    /* =========================
+       EXACT NUMBER OF FILES
+    ========================== */
+
+    clearExistingTracks();
+
+
+    finalFiles.forEach(
+      (file,index) => {
+
+        createTrack(
+          file,
+          index
+        );
+
+      }
+    );
+
+
+    lockAllInputs();
+
+
+    statusMsg.innerText =
+      `✅ ${finalFiles.length}টি Audio select করা হয়েছে → ${finalFiles.length}টি Player তৈরি হয়েছে।`;
+
+    statusMsg.style.color =
+      '#00e676';
+
+
+    hideLoading();
+
+  }
+);
+
+
+/* =========================================================
+   CREATE TRACK
+========================================================= */
+
+function createTrack(
+  file,
+  index
+){
+
+  const audio =
+    new Audio();
+
+  audio.preload =
+    'metadata';
+
+  audio.volume =
+    0.8;
+
+
+  const objectURL =
+    URL.createObjectURL(
+      file
+    );
+
+
+  audio.src =
+    objectURL;
+
+
+  tracks[index] = {
+
+    audio:audio,
+
+    isLoaded:true,
+
+    fileName:file.name,
+
+    objectURL:objectURL
+
+  };
+
+
+  createTrackCard(
+    index,
+    file.name
+  );
+
+
+  audio.addEventListener(
+    'loadedmetadata',
+    function(){
+
+      updateMaxDuration();
+
+      checkPlayButtonState();
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   TRACK CARD
+========================================================= */
+
+function createTrackCard(
+  index,
+  fileName
+){
+
+  const card =
+    document.createElement('div');
+
+
+  card.className =
+    'track-card';
+
+
+  card.id =
+    `card-${index}`;
+
+
+  card.innerHTML = `
+
+    <div class="track-header">
+
+      <div class="track-title-area">
+
+        <span class="track-num">
+          Track ${index + 1}
+        </span>
+
+        <span
+          class="track-file-name"
+          id="fileName-${index}"
+          title="${escapeHTML(fileName)}"
+        >
+          ${escapeHTML(fileName)}
+        </span>
+
+      </div>
+
+      <span
+        class="status-badge"
+        id="badge-${index}"
+      >
+        Loaded
+      </span>
+
+    </div>
+
+    <div class="volume-row">
+
+      <span>🔊</span>
+
+      <input
+        type="range"
+        class="vol-slider"
+        min="0"
+        max="1"
+        step="0.01"
+        value="0.8"
+        data-index="${index}"
+      >
+
+      <span
+        class="vol-text"
+        id="volText-${index}"
+      >
+        80%
+      </span>
+
+    </div>
+
+  `;
+
+
+  trackList.appendChild(
+    card
+  );
+
+
+  const slider =
+    card.querySelector(
+      '.vol-slider'
+    );
+
+
+  slider.addEventListener(
+    'input',
+    function(e){
+
+      const i =
+        parseInt(
+          e.target.dataset.index
+        );
+
+
+      const value =
+        parseFloat(
+          e.target.value
+        );
+
+
+      if(
+        tracks[i] &&
+        tracks[i].audio
+      ){
+
+        tracks[i].audio.volume =
+          value;
+
+      }
+
+
+      document.getElementById(
+        `volText-${i}`
+      ).innerText =
+        `${Math.round(value * 100)}%`;
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   ESCAPE HTML
+========================================================= */
+
+function escapeHTML(text){
+
+  return String(text)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#039;');
+
+}
+
+
+/* =========================================================
+   MIME TYPE
+========================================================= */
+
+function getAudioMime(ext){
+
+  const map = {
+
+    wav:'audio/wav',
+
+    mp3:'audio/mpeg',
+
+    ogg:'audio/ogg',
+
+    flac:'audio/flac',
+
+    aac:'audio/aac',
+
+    m4a:'audio/mp4',
+
+    webm:'audio/webm',
+
+    opus:'audio/ogg'
+
+  };
+
+  return map[ext] ||
+    'audio/mpeg';
+
+}
+
+
+/* =========================================================
+   CLEAR OLD TRACKS
+========================================================= */
+
+function clearExistingTracks(){
+
+  tracks.forEach(
+    track => {
+
+      if(!track) return;
+
+
+      try{
+
+        track.audio.pause();
+
+        track.audio.removeAttribute(
+          'src'
+        );
+
+        track.audio.load();
+
+      }
+      catch(error){}
+
+
+      if(
+        track.objectURL
+      ){
+
+        URL.revokeObjectURL(
+          track.objectURL
+        );
+
+      }
+
+    }
+  );
+
+
+  tracks = [];
+
+  trackList.innerHTML = '';
+
+  isPlaying = false;
+
+  maxDuration = 0;
+
+  masterSeekbar.value = 0;
+
+  masterSeekbar.max = 0;
+
+  currentTimeEl.innerText =
+    '00:00';
+
+  durationEl.innerText =
+    '00:00';
+
+  masterPlayBtn.innerText =
+    '▶ Play All';
+
+  masterPlayBtn.style.background =
+    '#00e676';
+
+  masterPlayBtn.disabled =
+    true;
+
+  masterSeekbar.disabled =
+    true;
+
+}
+
+
+/* =========================================================
+   LOCK INPUTS
+========================================================= */
+
+function lockAllInputs(){
+
+  isLocked = true;
+
+
+  folderInput.disabled =
+    true;
+
+  fileInput.disabled =
+    true;
+
+
+  folderLabel.classList.add(
+    'disabled'
+  );
+
+  fileLabel.classList.add(
+    'disabled'
+  );
+
+
+  folderLabel.innerText =
+    '🔒 Locked';
+
+  fileLabel.innerText =
+    '🔒 Locked';
+
+}
+
+
+/* =========================================================
+   MAX DURATION
+========================================================= */
+
+function updateMaxDuration(){
+
+  maxDuration = 0;
+
+
+  tracks.forEach(
+    track => {
+
+      if(
+        track &&
+        track.isLoaded &&
+        !isNaN(
+          track.audio.duration
+        )
+      ){
+
+        if(
+          track.audio.duration >
+          maxDuration
+        ){
+
+          maxDuration =
+            track.audio.duration;
+
+        }
+
+      }
+
+    }
+  );
+
+
+  masterSeekbar.max =
+    maxDuration;
+
+
+  durationEl.innerText =
+    formatTime(
+      maxDuration
+    );
+
+}
+
+
+/* =========================================================
+   CHECK PLAY BUTTON
+========================================================= */
+
+function checkPlayButtonState(){
+
+  const hasLoaded =
+    tracks.some(
+      track =>
+        track &&
+        track.isLoaded
+    );
+
+
+  masterPlayBtn.disabled =
+    !hasLoaded;
+
+
+  masterSeekbar.disabled =
+    !hasLoaded;
+
+}
+
+
+/* =========================================================
+   PLAY ALL / PAUSE ALL
+========================================================= */
+
+masterPlayBtn.addEventListener(
+  'click',
+  async function(){
+
+    if(!tracks.length){
+      return;
+    }
+
+
+    if(!isPlaying){
+
+      const playPromises = [];
+
+
+      tracks.forEach(
+        function(track,index){
+
+          if(
+            track &&
+            track.isLoaded
+          ){
+
+            /*
+              সব player একই timeline
+              থেকে শুরু করবে।
+            */
+
+            track.audio.currentTime =
+              parseFloat(
+                masterSeekbar.value
+              ) || 0;
+
+
+            playPromises.push(
+              track.audio.play()
+            );
+
+
+            const badge =
+              document.getElementById(
+                `badge-${index}`
+              );
+
+
+            const card =
+              document.getElementById(
+                `card-${index}`
+              );
+
+
+            if(badge){
+
+              badge.innerText =
+                '▶ Playing';
+
+              badge.classList.add(
+                'active'
+              );
+
+            }
+
+
+            if(card){
+
+              card.classList.add(
+                'playing'
+              );
+
+            }
+
+          }
+
+        }
+      );
+
+
+      try{
+
+        await Promise.all(
+          playPromises
+        );
+
+        isPlaying =
+          true;
+
+        masterPlayBtn.innerText =
+          '⏸ Pause All';
+
+        masterPlayBtn.style.background =
+          '#ff5252';
+
+      }
+      catch(error){
+
+        console.error(
+          error
+        );
+
+      }
+
+    }
+    else{
+
+      pauseAll();
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   PAUSE ALL
+========================================================= */
+
+function pauseAll(){
+
+  tracks.forEach(
+    function(track,index){
+
+      if(
+        track &&
+        track.isLoaded
+      ){
+
+        track.audio.pause();
+
+
+        const badge =
+          document.getElementById(
+            `badge-${index}`
+          );
+
+
+        const card =
+          document.getElementById(
+            `card-${index}`
+          );
+
+
+        if(badge){
+
+          badge.innerText =
+            '⏸ Paused';
+
+          badge.classList.remove(
+            'active'
+          );
+
+        }
+
+
+        if(card){
+
+          card.classList.remove(
+            'playing'
+          );
+
+        }
+
+      }
+
+    }
+  );
+
+
+  isPlaying =
+    false;
+
+
+  masterPlayBtn.innerText =
+    '▶ Play All';
+
+
+  masterPlayBtn.style.background =
+    '#00e676';
+
+}
+
+
+/* =========================================================
+   MASTER SEEKBAR
+========================================================= */
+
+masterSeekbar.addEventListener(
+  'input',
+  function(e){
+
+    const seekTime =
+      parseFloat(
+        e.target.value
+      );
+
+
+    tracks.forEach(
+      function(track){
+
+        if(
+          track &&
+          track.isLoaded
+        ){
+
+          try{
+
+            track.audio.currentTime =
+              seekTime;
+
+          }
+          catch(error){}
+
+        }
+
+      }
+    );
+
+
+    currentTimeEl.innerText =
+      formatTime(
+        seekTime
+      );
+
+  }
+);
+
+
+/* =========================================================
+   SYNCHRONIZED TIME UPDATE
+========================================================= */
+
+setInterval(
+  function(){
+
+    if(!isPlaying){
+      return;
+    }
+
+
+    const firstTrack =
+      tracks.find(
+        track =>
+          track &&
+          track.isLoaded
+      );
+
+
+    if(!firstTrack){
+      return;
+    }
+
+
+    const current =
+      firstTrack.audio.currentTime;
+
+
+    masterSeekbar.value =
+      current;
+
+
+    currentTimeEl.innerText =
+      formatTime(
+        current
+      );
+
+
+    /*
+      যদি সব audio শেষ হয়ে যায়,
+      তাহলে Play All আবার ready হবে।
+    */
+
+    const anyPlaying =
+      tracks.some(
+        track =>
+          track &&
+          track.isLoaded &&
+          !track.audio.paused
+      );
+
+
+    if(
+      !anyPlaying &&
+      current > 0
+    ){
+
+      const anyNotEnded =
+        tracks.some(
+          track =>
+            track &&
+            track.isLoaded &&
+            !track.audio.ended
+        );
+
+
+      if(!anyNotEnded){
+
+        pauseAll();
+
+      }
+
+    }
+
+  },
+  100
+);
+
+
+/* =========================================================
+   TIME FORMAT
+========================================================= */
+
+function formatTime(seconds){
+
+  if(
+    isNaN(seconds) ||
+    !isFinite(seconds)
+  ){
+
+    return '00:00';
+
+  }
+
+
+  const min =
+    Math.floor(
+      seconds / 60
+    );
+
+
+  const sec =
+    Math.floor(
+      seconds % 60
+    );
+
+
+  return (
+    (min < 10 ? '0' : '') +
+    min +
+    ':' +
+    (sec < 10 ? '0' : '') +
+    sec
+  );
+
+}
+
+
+/* =========================================================
+   LOADING
+========================================================= */
+
+function showLoading(text){
+
+  loadingBox.style.display =
+    'block';
+
+  loadingText.innerText =
+    text;
+
+}
+
+
+function hideLoading(){
+
+  loadingBox.style.display =
+    'none';
+
+}
+
+
+/* =========================================================
+   RESET
+========================================================= */
+
+reloadBtn.addEventListener(
+  'click',
+  function(){
+
+    window.location.reload();
+
+  }
+);
+
+</script>
 
 </body>
 </html>
+```
