@@ -1,1293 +1,1099 @@
+```html
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Multi Track Audio Synchronizer</title>
+<title>Multi Track Audio Player</title>
 
-<!-- ZIP Reader -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
 <style>
 *{
-  box-sizing:border-box;
-  margin:0;
-  padding:0;
-  font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
+    box-sizing:border-box;
 }
 
 body{
-  background:#121212;
-  color:#fff;
-  min-height:100vh;
-  padding:20px;
+    margin:0;
+    font-family:Arial,Helvetica,sans-serif;
+    background:#080b12;
+    color:#fff;
+    min-height:100vh;
 }
 
 .container{
-  background:#1e1e1e;
-  padding:30px;
-  border-radius:16px;
-  box-shadow:0 10px 30px rgba(0,0,0,.5);
-  width:100%;
-  max-width:850px;
-  margin:auto;
+    width:min(1200px,94%);
+    margin:auto;
+    padding:20px 0 40px;
 }
 
-h2{
-  text-align:center;
-  margin-bottom:20px;
-  color:#00e676;
+h1{
+    text-align:center;
+    margin:5px 0 20px;
+    font-size:28px;
 }
 
-/* =========================
-   LOAD SECTION
-========================= */
-
-.folder-section{
-  background:#282828;
-  padding:15px;
-  border-radius:10px;
-  margin-bottom:20px;
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-  border:1px dashed #444;
+.top-buttons{
+    display:flex;
+    justify-content:center;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:18px;
 }
 
-.folder-controls{
-  display:flex;
-  gap:10px;
-  align-items:center;
-  flex-wrap:wrap;
+button,
+.file-label{
+    border:0;
+    padding:12px 18px;
+    border-radius:10px;
+    background:#171e2d;
+    color:#fff;
+    cursor:pointer;
+    font-size:14px;
+    font-weight:bold;
+    border:1px solid #303b52;
+    transition:.2s;
 }
 
-.btn-folder{
-  background:#2196f3;
-  color:white;
-  padding:10px 22px;
-  border-radius:8px;
-  cursor:pointer;
-  font-weight:600;
-  font-size:14px;
-  display:inline-block;
-  transition:.2s;
+button:hover,
+.file-label:hover{
+    background:#25314a;
 }
 
-.btn-folder:hover{
-  background:#1976d2;
+input[type="file"]{
+    display:none;
 }
 
-.btn-file{
-  background:#00a86b;
+.master{
+    background:#101621;
+    border:1px solid #273247;
+    border-radius:16px;
+    padding:18px;
+    margin-bottom:20px;
 }
 
-.btn-file:hover{
-  background:#008f5b;
-}
-
-.btn-folder.disabled{
-  background:#444;
-  color:#888;
-  cursor:not-allowed;
-  opacity:.6;
-}
-
-.btn-reload{
-  background:#ff9800;
-  color:#121212;
-  border:none;
-  padding:10px 18px;
-  font-size:14px;
-  font-weight:bold;
-  border-radius:8px;
-  cursor:pointer;
-  transition:.2s;
-}
-
-.btn-reload:hover{
-  background:#fb8c00;
-}
-
-.file-input-hidden{
-  display:none;
-}
-
-.status-msg{
-  font-size:13px;
-  color:#aaa;
-}
-
-/* =========================
-   MASTER CONTROLS
-========================= */
-
-.main-controls{
-  display:flex;
-  justify-content:center;
-  margin-bottom:20px;
-}
-
-.btn-play{
-  border:none;
-  padding:12px 35px;
-  font-size:16px;
-  font-weight:bold;
-  border-radius:30px;
-  cursor:pointer;
-  transition:all .2s ease;
-  background:#00e676;
-  color:#121212;
-  box-shadow:0 4px 15px rgba(0,230,118,.3);
-}
-
-.btn-play:disabled{
-  background:#444;
-  color:#888;
-  cursor:not-allowed;
-  box-shadow:none;
-}
-
-/* =========================
-   SEEKBAR
-========================= */
-
-.seekbar-container{
-  background:#2a2a2a;
-  padding:15px;
-  border-radius:10px;
-  margin-bottom:25px;
-  display:flex;
-  flex-direction:column;
-  gap:8px;
-}
-
-.time-info{
-  display:flex;
-  justify-content:space-between;
-  font-size:13px;
-  color:#aaa;
+.master-controls{
+    display:flex;
+    justify-content:center;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:15px;
 }
 
 #masterSeekbar{
-  width:100%;
-  accent-color:#00e676;
-  cursor:pointer;
+    width:100%;
+    cursor:pointer;
 }
 
-/* =========================
-   TRACK LIST
-========================= */
-
-.track-list{
-  display:flex;
-  flex-direction:column;
-  gap:15px;
+.time-row{
+    display:flex;
+    justify-content:space-between;
+    font-size:13px;
+    color:#aeb8ca;
+    margin-top:5px;
 }
 
-.track-card{
-  background:#2a2a2a;
-  padding:15px;
-  border-radius:10px;
-  display:flex;
-  flex-direction:column;
-  gap:12px;
-  border-left:4px solid #444;
-  transition:border-color .2s, box-shadow .2s;
+.tracks{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+    gap:14px;
 }
 
-.track-card.playing{
-  border-left-color:#00e676;
-  box-shadow:0 0 12px rgba(0,230,118,.08);
+.track{
+    background:#101621;
+    border:1px solid #273247;
+    border-radius:15px;
+    padding:15px;
+    min-width:0;
 }
 
 .track-header{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:10px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    margin-bottom:8px;
 }
 
-.track-title-area{
-  display:flex;
-  flex-direction:column;
-  gap:3px;
-  overflow:hidden;
-  flex:1;
+.track-number{
+    font-weight:bold;
+    font-size:17px;
 }
 
-.track-num{
-  font-size:13px;
-  font-weight:bold;
-  color:#00e676;
+.status{
+    font-size:11px;
+    padding:5px 8px;
+    border-radius:20px;
+    background:#263149;
+    color:#b9c5d8;
 }
 
-.track-file-name{
-  font-size:13px;
-  color:#e0e0e0;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
+.status.loaded{
+    background:#123b2c;
+    color:#5ff0a7;
 }
 
-.status-badge{
-  flex-shrink:0;
-  font-size:11px;
-  padding:3px 8px;
-  border-radius:12px;
-  background:#333;
-  color:#888;
+.status.playing{
+    background:#183b63;
+    color:#66b8ff;
 }
 
-.status-badge.active{
-  background:rgba(0,230,118,.2);
-  color:#00e676;
-  border:1px solid #00e676;
+.file-name{
+    font-size:13px;
+    color:#c6cfdd;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    margin-bottom:13px;
 }
 
-/* =========================
-   CONTROLS ROW (LR + Volume)
-========================= */
-
-.controls-row{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:15px;
-  flex-wrap:wrap;
+.channel-box{
+    display:flex;
+    align-items:center;
+    gap:16px;
+    background:#0a0e16;
+    border:1px solid #222c3e;
+    padding:10px 12px;
+    border-radius:10px;
+    margin-bottom:13px;
 }
 
-.lr-controls{
-  display:flex;
-  gap:12px;
-  font-size:13px;
-  align-items:center;
+.channel-title{
+    color:#8e9bb0;
+    font-size:12px;
+    margin-right:auto;
 }
 
-.lr-controls label{
-  display:flex;
-  align-items:center;
-  gap:5px;
-  cursor:pointer;
-  color:#ccc;
-  user-select:none;
+.channel-option{
+    display:flex;
+    align-items:center;
+    gap:5px;
+    font-size:13px;
+    cursor:pointer;
+    user-select:none;
 }
 
-.lr-controls input[type="checkbox"]{
-  accent-color:#00e676;
-  cursor:pointer;
-  width:16px;
-  height:16px;
+.channel-option input{
+    width:18px;
+    height:18px;
+    cursor:pointer;
+    accent-color:#38a8ff;
 }
 
 .volume-row{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  flex:1;
-  min-width:200px;
+    display:flex;
+    align-items:center;
+    gap:10px;
 }
 
-.volume-row input[type="range"]{
-  width:100%;
-  accent-color:#00e676;
-  cursor:pointer;
+.volume-label{
+    font-size:12px;
+    color:#8e9bb0;
+    width:55px;
 }
 
-.vol-text{
-  font-size:12px;
-  width:35px;
-  text-align:right;
-  color:#bbb;
+.volume-slider{
+    flex:1;
+    cursor:pointer;
 }
 
-/* =========================
-   LOADING
-========================= */
+.volume-value{
+    width:42px;
+    text-align:right;
+    font-size:12px;
+    color:#b7c2d4;
+}
 
-.loading-box{
-  text-align:center;
-  padding:20px;
-  color:#aaa;
-  display:none;
+.empty{
+    text-align:center;
+    color:#68758b;
+    padding:45px 10px;
+    border:1px dashed #303b4f;
+    border-radius:15px;
+}
+
+.loading{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.72);
+    z-index:1000;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+    gap:12px;
+}
+
+.loading.show{
+    display:flex;
 }
 
 .spinner{
-  width:30px;
-  height:30px;
-  border:3px solid #444;
-  border-top-color:#00e676;
-  border-radius:50%;
-  animation:spin .8s linear infinite;
-  margin:0 auto 10px;
+    width:42px;
+    height:42px;
+    border:4px solid #263248;
+    border-top-color:#55b9ff;
+    border-radius:50%;
+    animation:spin .8s linear infinite;
 }
 
 @keyframes spin{
-  to{
-    transform:rotate(360deg);
-  }
+    to{transform:rotate(360deg);}
 }
 
-/* =========================
-   RESPONSIVE
-========================= */
+.info{
+    text-align:center;
+    color:#76849a;
+    font-size:12px;
+    margin-top:18px;
+}
 
 @media(max-width:600px){
+    h1{
+        font-size:23px;
+    }
 
-  body{
-    padding:10px;
-  }
+    .container{
+        width:95%;
+        padding-top:12px;
+    }
 
-  .container{
-    padding:18px;
-  }
+    .tracks{
+        grid-template-columns:1fr;
+    }
 
-  .folder-controls{
-    flex-direction:column;
-    align-items:stretch;
-  }
+    button,
+    .file-label{
+        width:100%;
+        text-align:center;
+    }
 
-  .btn-folder,
-  .btn-reload{
-    text-align:center;
-    width:100%;
-  }
-
-  .track-header{
-    align-items:flex-start;
-  }
-
-  .status-badge{
-    display:none;
-  }
-
-  .controls-row{
-    flex-direction:column;
-    align-items:stretch;
-  }
+    .top-buttons{
+        flex-direction:column;
+    }
 }
 </style>
 </head>
 
 <body>
 
+<div class="loading" id="loading">
+    <div class="spinner"></div>
+    <div id="loadingText">Loading...</div>
+</div>
+
 <div class="container">
 
-  <h2>🎧 Multi-Track Audio Synchronizer</h2>
+    <h1>🎵 Multi Track Audio Player</h1>
 
-  <!-- =========================
-       LOAD CONTROLS
-  ========================== -->
+    <div class="top-buttons">
 
-  <div class="folder-section">
+        <label class="file-label">
+            📁 Select Folder
+            <input
+                type="file"
+                id="folderInput"
+                webkitdirectory
+                directory
+                multiple
+            >
+        </label>
 
-    <div class="folder-controls">
+        <label class="file-label">
+            🎵 Select Files / ZIP
+            <input
+                type="file"
+                id="fileInput"
+                multiple
+                accept="audio/*,.wav,.mp3,.ogg,.flac,.aac,.m4a,.webm,.opus,.zip"
+            >
+        </label>
 
-      <!-- Folder -->
-      <label
-        for="folderInput"
-        class="btn-folder"
-        id="folderLabel"
-      >
-        📁 Select Folder
-      </label>
-
-      <input
-        type="file"
-        id="folderInput"
-        class="file-input-hidden"
-        webkitdirectory
-        directory
-        multiple
-      >
-
-      <!-- Files + ZIP -->
-      <label
-        for="fileInput"
-        class="btn-folder btn-file"
-        id="fileLabel"
-      >
-        🎵 Select Files / ZIP
-      </label>
-
-      <input
-        type="file"
-        id="fileInput"
-        class="file-input-hidden"
-        multiple
-        accept="audio/*,.wav,.mp3,.ogg,.flac,.aac,.m4a,.webm,.opus,.zip"
-      >
-
-      <!-- Reset -->
-      <button
-        id="reloadBtn"
-        class="btn-reload"
-      >
-        🔄 New Load / Reset
-      </button>
+        <button id="resetBtn">🔄 New Load / Reset</button>
 
     </div>
 
-    <div
-      class="status-msg"
-      id="statusMsg"
-    >
-      Folder অথবা Audio File / ZIP select করুন।
-    </div>
+    <div class="master">
 
-  </div>
+        <div class="master-controls">
 
+            <button id="playAllBtn">
+                ▶ Play All
+            </button>
 
-  <!-- Loading -->
+            <button id="pauseAllBtn">
+                ⏸ Pause All
+            </button>
 
-  <div
-    class="loading-box"
-    id="loadingBox"
-  >
+        </div>
 
-    <div class="spinner"></div>
+        <input
+            type="range"
+            id="masterSeekbar"
+            min="0"
+            max="0"
+            value="0"
+            step="0.01"
+            disabled
+        >
 
-    <div id="loadingText">
-      Audio load হচ্ছে...
-    </div>
-
-  </div>
-
-
-  <!-- =========================
-       MASTER PLAY
-  ========================== -->
-
-  <div class="main-controls">
-
-    <button
-      id="masterPlayBtn"
-      class="btn-play"
-      disabled
-    >
-      ▶ Play All
-    </button>
-
-  </div>
-
-
-  <!-- =========================
-       MASTER SEEKBAR
-  ========================== -->
-
-  <div class="seekbar-container">
-
-    <input
-      type="range"
-      id="masterSeekbar"
-      min="0"
-      max="0"
-      value="0"
-      step="0.1"
-      disabled
-    >
-
-    <div class="time-info">
-
-      <span id="currentTime">
-        00:00
-      </span>
-
-      <span id="duration">
-        00:00
-      </span>
+        <div class="time-row">
+            <span id="currentTime">00:00</span>
+            <span id="totalTime">00:00</span>
+        </div>
 
     </div>
 
-  </div>
+    <div id="tracksContainer" class="tracks">
 
+        <div class="empty">
+            Select a folder, audio files, or ZIP file to create players.
+        </div>
 
-  <!-- =========================
-       DYNAMIC PLAYERS
-  ========================== -->
+    </div>
 
-  <div
-    class="track-list"
-    id="trackList"
-  ></div>
+    <div class="info">
+        Left / Right channel controls are independent for every player.
+    </div>
 
 </div>
 
 
 <script>
 
-/* =========================================================
-   CONFIG
-========================================================= */
-
 const AUDIO_EXTENSIONS = [
-  'wav',
-  'mp3',
-  'ogg',
-  'flac',
-  'aac',
-  'm4a',
-  'webm',
-  'opus'
+    "wav",
+    "mp3",
+    "ogg",
+    "flac",
+    "aac",
+    "m4a",
+    "webm",
+    "opus"
 ];
-
-
-/* =========================================================
-   ELEMENTS
-========================================================= */
-
-const trackList =
-  document.getElementById('trackList');
-
-const masterPlayBtn =
-  document.getElementById('masterPlayBtn');
-
-const masterSeekbar =
-  document.getElementById('masterSeekbar');
-
-const currentTimeEl =
-  document.getElementById('currentTime');
-
-const durationEl =
-  document.getElementById('duration');
-
-const folderInput =
-  document.getElementById('folderInput');
-
-const fileInput =
-  document.getElementById('fileInput');
-
-const folderLabel =
-  document.getElementById('folderLabel');
-
-const fileLabel =
-  document.getElementById('fileLabel');
-
-const reloadBtn =
-  document.getElementById('reloadBtn');
-
-const statusMsg =
-  document.getElementById('statusMsg');
-
-const loadingBox =
-  document.getElementById('loadingBox');
-
-const loadingText =
-  document.getElementById('loadingText');
-
-
-/* =========================================================
-   STATE
-========================================================= */
 
 let tracks = [];
 
-let isPlaying = false;
+let audioContext = null;
 
-let maxDuration = 0;
+let isPlayingAll = false;
 
-let isLocked = false;
-
-let audioCtx = null;
+let masterUpdating = false;
 
 
 /* =========================================================
-   AUDIO CONTEXT INITIALIZER
+   AUDIO CONTEXT
 ========================================================= */
 
-function initAudioContext(){
-  if(!audioCtx){
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    audioCtx = new AudioContext();
-  }
-  if(audioCtx.state === 'suspended'){
-    audioCtx.resume();
-  }
+function getAudioContext(){
+
+    if(!audioContext){
+
+        const AudioContext =
+            window.AudioContext ||
+            window.webkitAudioContext;
+
+        if(!AudioContext){
+            alert("Web Audio API is not supported in this browser.");
+            return null;
+        }
+
+        audioContext = new AudioContext();
+    }
+
+    if(audioContext.state === "suspended"){
+        audioContext.resume();
+    }
+
+    return audioContext;
 }
 
 
 /* =========================================================
-   FILE TYPE
+   FILE CHECK
 ========================================================= */
 
 function isAudioFile(file){
 
-  if(!file) return false;
+    const name = file.name.toLowerCase();
 
-  if(
-    file.type &&
-    file.type.startsWith('audio/')
-  ){
-    return true;
-  }
+    const ext =
+        name.includes(".")
+        ? name.split(".").pop()
+        : "";
 
-  const ext =
-    file.name
-      .split('.')
-      .pop()
-      .toLowerCase();
-
-  return AUDIO_EXTENSIONS.includes(ext);
+    return AUDIO_EXTENSIONS.includes(ext);
 }
 
 
 function isZipFile(file){
 
-  if(!file) return false;
+    const name = file.name.toLowerCase();
 
-  return (
-    file.type === 'application/zip' ||
-    file.type === 'application/x-zip-compressed' ||
-    file.name.toLowerCase().endsWith('.zip')
-  );
+    return (
+        name.endsWith(".zip") ||
+        file.type === "application/zip" ||
+        file.type === "application/x-zip-compressed"
+    );
 }
 
 
 /* =========================================================
-   FOLDER SELECT
+   LOADING UI
 ========================================================= */
 
-folderInput.addEventListener(
-  'change',
-  async function(e){
+function showLoading(text){
 
-    if(isLocked) return;
+    document.getElementById("loadingText").textContent = text;
 
-    const files =
-      Array.from(e.target.files);
+    document.getElementById("loading").classList.add("show");
+}
 
-    if(!files.length){
 
-      statusMsg.innerText =
-        '❌ কোনো file পাওয়া যায়নি।';
+function hideLoading(){
 
-      return;
-    }
-
-    await loadFolderFiles(files);
-
-  }
-);
-
-
-/* =========================================================
-   LOAD FOLDER
-========================================================= */
-
-async function loadFolderFiles(files){
-
-  showLoading(
-    'Folder scan হচ্ছে...'
-  );
-
-  const audioFiles =
-    files.filter(
-      file => isAudioFile(file)
-    );
-
-  const zipFiles =
-    files.filter(
-      file => isZipFile(file)
-    );
-
-  let finalFiles =
-    [...audioFiles];
-
-
-  /* =========================
-     ZIP EXTRACTION
-  ========================== */
-
-  for(
-    let i = 0;
-    i < zipFiles.length;
-    i++
-  ){
-
-    const zipFile =
-      zipFiles[i];
-
-    loadingText.innerText =
-      `ZIP read হচ্ছে: ${zipFile.name}`;
-
-
-    try{
-
-      const zip =
-        await JSZip.loadAsync(
-          zipFile
-        );
-
-      const entries =
-        Object.values(zip.files);
-
-
-      for(
-        const entry of entries
-      ){
-
-        if(entry.dir){
-          continue;
-        }
-
-
-        const ext =
-          entry.name
-            .split('.')
-            .pop()
-            .toLowerCase();
-
-
-        if(
-          !AUDIO_EXTENSIONS.includes(ext)
-        ){
-          continue;
-        }
-
-
-        const blob =
-          await entry.async('blob');
-
-
-        const mime =
-          getAudioMime(ext);
-
-
-        const audioBlob =
-          new Blob(
-            [blob],
-            {type:mime}
-          );
-
-
-        const fileName =
-          entry.name
-            .split('/')
-            .pop();
-
-
-        const extractedFile =
-          new File(
-            [audioBlob],
-            fileName,
-            {type:mime}
-          );
-
-
-        finalFiles.push(
-          extractedFile
-        );
-
-      }
-
-    }
-    catch(error){
-
-      console.error(
-        'ZIP error:',
-        error
-      );
-
-    }
-
-  }
-
-
-  if(!finalFiles.length){
-
-    hideLoading();
-
-    statusMsg.innerText =
-      '❌ Folder-এর ভিতরে কোনো Audio পাওয়া যায়নি।';
-
-    statusMsg.style.color =
-      '#ff5252';
-
-    return;
-
-  }
-
-
-  /* =========================
-     LOAD ALL
-  ========================== */
-
-  clearExistingTracks();
-
-
-  finalFiles.forEach(
-    (file,index) => {
-
-      createTrack(
-        file,
-        index
-      );
-
-    }
-  );
-
-
-  lockAllInputs();
-
-
-  statusMsg.innerText =
-    `✅ Folder-এর ${finalFiles.length}টি Audio-এর জন্য ${finalFiles.length}টি Player তৈরি হয়েছে।`;
-
-  statusMsg.style.color =
-    '#00e676';
-
-
-  hideLoading();
-
+    document.getElementById("loading").classList.remove("show");
 }
 
 
 /* =========================================================
-   FILE / ZIP SELECT
+   FORMAT TIME
 ========================================================= */
 
-fileInput.addEventListener(
-  'change',
-  async function(e){
+function formatTime(seconds){
 
-    if(isLocked) return;
+    if(!isFinite(seconds) || seconds < 0){
+        return "00:00";
+    }
 
-    const selectedFiles =
-      Array.from(e.target.files);
+    const hours = Math.floor(seconds / 3600);
 
-    if(!selectedFiles.length){
+    const minutes =
+        Math.floor((seconds % 3600) / 60);
 
-      return;
+    const secs =
+        Math.floor(seconds % 60);
+
+    if(hours > 0){
+
+        return (
+            String(hours).padStart(2,"0") +
+            ":" +
+            String(minutes).padStart(2,"0") +
+            ":" +
+            String(secs).padStart(2,"0")
+        );
 
     }
 
+    return (
+        String(minutes).padStart(2,"0") +
+        ":" +
+        String(secs).padStart(2,"0")
+    );
+}
 
-    showLoading(
-      'Selected files process হচ্ছে...'
+
+/* =========================================================
+   CLEAN OLD TRACKS
+========================================================= */
+
+function clearExistingTracks(){
+
+    tracks.forEach(track => {
+
+        try{
+            track.audio.pause();
+        }catch(e){}
+
+        try{
+            if(track.sourceNode){
+                track.sourceNode.disconnect();
+            }
+
+            if(track.splitter){
+                track.splitter.disconnect();
+            }
+
+            if(track.leftGain){
+                track.leftGain.disconnect();
+            }
+
+            if(track.rightGain){
+                track.rightGain.disconnect();
+            }
+
+            if(track.merger){
+                track.merger.disconnect();
+            }
+        }catch(e){}
+
+        try{
+            URL.revokeObjectURL(track.objectURL);
+        }catch(e){}
+
+    });
+
+    tracks = [];
+
+    isPlayingAll = false;
+
+    document.getElementById("tracksContainer").innerHTML = `
+        <div class="empty">
+            Select a folder, audio files, or ZIP file to create players.
+        </div>
+    `;
+
+    document.getElementById("masterSeekbar").value = 0;
+    document.getElementById("masterSeekbar").max = 0;
+    document.getElementById("masterSeekbar").disabled = true;
+
+    document.getElementById("currentTime").textContent = "00:00";
+    document.getElementById("totalTime").textContent = "00:00";
+}
+
+
+/* =========================================================
+   CREATE EXACT STEREO CHANNEL ROUTING
+========================================================= */
+
+function setupChannelRouting(track, index){
+
+    const ctx = getAudioContext();
+
+    if(!ctx){
+        return;
+    }
+
+    /*
+        IMPORTANT:
+
+        Audio
+          ↓
+        ChannelSplitter
+          ↓
+        LEFT  → Left Gain  ┐
+                           ├→ ChannelMerger → Destination
+        RIGHT → Right Gain ┘
+
+        This keeps Left and Right physically separated.
+    */
+
+    const source =
+        ctx.createMediaElementSource(track.audio);
+
+    const splitter =
+        ctx.createChannelSplitter(2);
+
+    const leftGain =
+        ctx.createGain();
+
+    const rightGain =
+        ctx.createGain();
+
+    const merger =
+        ctx.createChannelMerger(2);
+
+
+    source.connect(splitter);
+
+
+    /*
+        LEFT CHANNEL
+    */
+
+    splitter.connect(
+        leftGain,
+        0
+    );
+
+    leftGain.connect(
+        merger,
+        0,
+        0
     );
 
 
-    let finalFiles =
-      selectedFiles.filter(
-        file => isAudioFile(file)
-      );
+    /*
+        RIGHT CHANNEL
+    */
 
+    splitter.connect(
+        rightGain,
+        1
+    );
 
-    const zipFiles =
-      selectedFiles.filter(
-        file => isZipFile(file)
-      );
-
-
-    for(
-      let i = 0;
-      i < zipFiles.length;
-      i++
-    ){
-
-      const zipFile =
-        zipFiles[i];
-
-      loadingText.innerText =
-        `ZIP extract হচ্ছে: ${zipFile.name}`;
-
-
-      try{
-
-        const zip =
-          await JSZip.loadAsync(
-            zipFile
-          );
-
-
-        const entries =
-          Object.values(zip.files);
-
-
-        for(
-          const entry of entries
-        ){
-
-          if(entry.dir){
-            continue;
-          }
-
-
-          const ext =
-            entry.name
-              .split('.')
-              .pop()
-              .toLowerCase();
-
-
-          if(
-            !AUDIO_EXTENSIONS.includes(ext)
-          ){
-            continue;
-          }
-
-
-          const blob =
-            await entry.async('blob');
-
-
-          const mime =
-            getAudioMime(ext);
-
-
-          const audioBlob =
-            new Blob(
-              [blob],
-              {type:mime}
-            );
-
-
-          const fileName =
-            entry.name
-              .split('/')
-              .pop();
-
-
-          const extractedFile =
-            new File(
-              [audioBlob],
-              fileName,
-              {type:mime}
-            );
-
-
-          finalFiles.push(
-            extractedFile
-          );
-
-        }
-
-      }
-      catch(error){
-
-        console.error(
-          'ZIP extraction error:',
-          error
-        );
-
-      }
-
-    }
-
-
-    if(!finalFiles.length){
-
-      hideLoading();
-
-      statusMsg.innerText =
-        '❌ কোনো valid Audio পাওয়া যায়নি।';
-
-      statusMsg.style.color =
-        '#ff5252';
-
-      return;
-
-    }
-
-
-    /* =========================
-       EXACT NUMBER OF FILES
-    ========================== */
-
-    clearExistingTracks();
-
-
-    finalFiles.forEach(
-      (file,index) => {
-
-        createTrack(
-          file,
-          index
-        );
-
-      }
+    rightGain.connect(
+        merger,
+        0,
+        1
     );
 
 
-    lockAllInputs();
+    /*
+        OUTPUT
+    */
+
+    merger.connect(ctx.destination);
 
 
-    statusMsg.innerText =
-      `✅ ${finalFiles.length}টি Audio select করা হয়েছে → ${finalFiles.length}টি Player তৈরি হয়েছে।`;
+    /*
+        BOTH CHANNELS ON INITIALLY
+    */
 
-    statusMsg.style.color =
-      '#00e676';
+    leftGain.gain.value = 1;
+
+    rightGain.gain.value = 1;
 
 
-    hideLoading();
+    track.sourceNode = source;
 
-  }
-);
+    track.splitter = splitter;
+
+    track.leftGain = leftGain;
+
+    track.rightGain = rightGain;
+
+    track.merger = merger;
+
+    track.audioContext = ctx;
+}
+
+
+/* =========================================================
+   CHANNEL CONTROL
+========================================================= */
+
+function updateChannelRouting(index){
+
+    const track = tracks[index];
+
+    if(!track){
+        return;
+    }
+
+    const card =
+        document.querySelector(
+            `.track[data-index="${index}"]`
+        );
+
+    if(!card){
+        return;
+    }
+
+    const left =
+        card.querySelector(".left-check");
+
+    const right =
+        card.querySelector(".right-check");
+
+
+    /*
+        NEVER allow both unchecked.
+    */
+
+    if(!left.checked && !right.checked){
+
+        /*
+            Keep the checkbox that was just changed
+            from making both channels OFF.
+
+            We restore LEFT by default.
+        */
+
+        left.checked = true;
+    }
+
+
+    if(track.leftGain){
+
+        track.leftGain.gain.setTargetAtTime(
+            left.checked ? 1 : 0,
+            audioContext.currentTime,
+            0.005
+        );
+    }
+
+
+    if(track.rightGain){
+
+        track.rightGain.gain.setTargetAtTime(
+            right.checked ? 1 : 0,
+            audioContext.currentTime,
+            0.005
+        );
+    }
+}
 
 
 /* =========================================================
    CREATE TRACK
 ========================================================= */
 
-function createTrack(
-  file,
-  index
-){
+function createTrack(file,index){
 
-  initAudioContext();
+    const audio = new Audio();
 
-  const audio =
-    new Audio();
+    audio.preload = "metadata";
 
-  audio.preload =
-    'metadata';
+    audio.volume = 0.8;
 
-  audio.volume =
-    0.8;
+    audio.src = URL.createObjectURL(file);
 
-  const objectURL =
-    URL.createObjectURL(
-      file
+    const track = {
+
+        audio: audio,
+
+        fileName: file.name,
+
+        objectURL: audio.src,
+
+        isLoaded: false,
+
+        sourceNode: null,
+
+        splitter: null,
+
+        leftGain: null,
+
+        rightGain: null,
+
+        merger: null,
+
+        audioContext: null
+    };
+
+
+    tracks.push(track);
+
+
+    createTrackCard(
+        index,
+        file.name
     );
 
-  audio.src =
-    objectURL;
 
-  // Web Audio API Routing setup for L/R checkboxes
-  const sourceNode = audioCtx.createMediaElementSource(audio);
-  const gainNode = audioCtx.createGain();
-  gainNode.gain.value = 0.8;
+    /*
+        Metadata loaded
+    */
 
-  const mergerNode = audioCtx.createChannelMerger(2);
-  const splitterNode = audioCtx.createChannelSplitter(2);
+    audio.addEventListener(
+        "loadedmetadata",
+        () => {
 
-  sourceNode.connect(gainNode);
-  gainNode.connect(splitterNode);
+            track.isLoaded = true;
 
-  // Connect split channels to merger based on initial state (L: checked, R: checked)
-  splitterNode.connect(mergerNode, 0, 0); // Left to Left
-  splitterNode.connect(mergerNode, 1, 1); // Right to Right
+            const card =
+                document.querySelector(
+                    `.track[data-index="${index}"]`
+                );
 
-  mergerNode.connect(audioCtx.destination);
+            if(card){
 
+                const status =
+                    card.querySelector(".status");
 
-  tracks[index] = {
+                status.textContent = "Loaded";
 
-    audio: audio,
+                status.classList.add("loaded");
+            }
 
-    isLoaded: true,
+            updateMaxDuration();
 
-    fileName: file.name,
-
-    objectURL: objectURL,
-
-    gainNode: gainNode,
-
-    splitter: splitterNode,
-
-    merger: mergerNode
-
-  };
+            checkPlayButtonState();
+        }
+    );
 
 
-  createTrackCard(
-    index,
-    file.name
-  );
+    /*
+        PLAYING
+    */
+
+    audio.addEventListener(
+        "play",
+        () => {
+
+            const card =
+                document.querySelector(
+                    `.track[data-index="${index}"]`
+                );
+
+            if(card){
+
+                const status =
+                    card.querySelector(".status");
+
+                status.textContent = "Playing";
+
+                status.classList.remove("loaded");
+
+                status.classList.add("playing");
+            }
+        }
+    );
 
 
-  audio.addEventListener(
-    'loadedmetadata',
-    function(){
+    /*
+        PAUSED
+    */
 
-      updateMaxDuration();
+    audio.addEventListener(
+        "pause",
+        () => {
 
-      checkPlayButtonState();
+            if(audio.ended){
+                return;
+            }
 
-    }
-  );
+            const card =
+                document.querySelector(
+                    `.track[data-index="${index}"]`
+                );
 
+            if(card){
+
+                const status =
+                    card.querySelector(".status");
+
+                status.textContent = "Loaded";
+
+                status.classList.remove("playing");
+
+                status.classList.add("loaded");
+            }
+        }
+    );
+
+
+    /*
+        END
+    */
+
+    audio.addEventListener(
+        "ended",
+        () => {
+
+            const card =
+                document.querySelector(
+                    `.track[data-index="${index}"]`
+                );
+
+            if(card){
+
+                const status =
+                    card.querySelector(".status");
+
+                status.textContent = "Ended";
+
+                status.classList.remove("playing");
+
+                status.classList.add("loaded");
+            }
+
+            checkAllEnded();
+        }
+    );
 }
 
 
 /* =========================================================
-   TRACK CARD
+   CREATE TRACK CARD
 ========================================================= */
 
-function createTrackCard(
-  index,
-  fileName
-){
+function createTrackCard(index,fileName){
 
-  const card =
-    document.createElement('div');
+    const container =
+        document.getElementById("tracksContainer");
 
 
-  card.className =
-    'track-card';
+    if(index === 0){
+        container.innerHTML = "";
+    }
 
 
-  card.id =
-    `card-${index}`;
+    const card =
+        document.createElement("div");
+
+    card.className = "track";
+
+    card.dataset.index = index;
 
 
-  card.innerHTML = `
+    card.innerHTML = `
 
-    <div class="track-header">
+        <div class="track-header">
 
-      <div class="track-title-area">
+            <div class="track-number">
+                Track ${index + 1}
+            </div>
 
-        <span class="track-num">
-          Track ${index + 1}
-        </span>
+            <div class="status">
+                Loading
+            </div>
 
-        <span
-          class="track-file-name"
-          id="fileName-${index}"
-          title="${escapeHTML(fileName)}"
+        </div>
+
+
+        <div
+            class="file-name"
+            title="${escapeHTML(fileName)}"
         >
-          ${escapeHTML(fileName)}
-        </span>
-
-      </div>
-
-      <span
-        class="status-badge"
-        id="badge-${index}"
-      >
-        Loaded
-      </span>
-
-    </div>
-
-    <div class="controls-row">
-
-      <div class="lr-controls">
-        <label>
-          <input type="checkbox" class="lr-check left-check" data-index="${index}" checked> L
-        </label>
-        <label>
-          <input type="checkbox" class="lr-check right-check" data-index="${index}" checked> R
-        </label>
-      </div>
-
-      <div class="volume-row">
-        <span>🔊</span>
-        <input
-          type="range"
-          class="vol-slider"
-          min="0"
-          max="1"
-          step="0.01"
-          value="0.8"
-          data-index="${index}"
-        >
-        <span
-          class="vol-text"
-          id="volText-${index}"
-        >
-          80%
-        </span>
-      </div>
-
-    </div>
-
-  `;
+            ${escapeHTML(fileName)}
+        </div>
 
 
-  trackList.appendChild(
-    card
-  );
+        <div class="channel-box">
+
+            <span class="channel-title">
+                Speaker
+            </span>
+
+            <label class="channel-option">
+
+                <input
+                    type="checkbox"
+                    class="channel-check left-check"
+                    checked
+                >
+
+                <span>Left</span>
+
+            </label>
 
 
-  const slider =
-    card.querySelector(
-      '.vol-slider'
+            <label class="channel-option">
+
+                <input
+                    type="checkbox"
+                    class="channel-check right-check"
+                    checked
+                >
+
+                <span>Right</span>
+
+            </label>
+
+        </div>
+
+
+        <div class="volume-row">
+
+            <span class="volume-label">
+                Volume
+            </span>
+
+            <input
+                type="range"
+                class="volume-slider"
+                min="0"
+                max="1"
+                step="0.01"
+                value="0.8"
+            >
+
+            <span class="volume-value">
+                80%
+            </span>
+
+        </div>
+
+    `;
+
+
+    container.appendChild(card);
+
+
+    const leftCheck =
+        card.querySelector(".left-check");
+
+    const rightCheck =
+        card.querySelector(".right-check");
+
+    const volumeSlider =
+        card.querySelector(".volume-slider");
+
+    const volumeValue =
+        card.querySelector(".volume-value");
+
+
+    /*
+        LEFT CHECKBOX
+    */
+
+    leftCheck.addEventListener(
+        "change",
+        () => {
+
+            /*
+                If RIGHT is already unchecked,
+                LEFT cannot be unchecked.
+            */
+
+            if(
+                !leftCheck.checked &&
+                !rightCheck.checked
+            ){
+
+                leftCheck.checked = true;
+
+                return;
+            }
+
+            updateChannelRouting(index);
+        }
     );
 
 
-  slider.addEventListener(
-    'input',
-    function(e){
+    /*
+        RIGHT CHECKBOX
+    */
 
-      const i =
-        parseInt(
-          e.target.dataset.index
-        );
+    rightCheck.addEventListener(
+        "change",
+        () => {
 
+            /*
+                If LEFT is already unchecked,
+                RIGHT cannot be unchecked.
+            */
 
-      const value =
-        parseFloat(
-          e.target.value
-        );
+            if(
+                !leftCheck.checked &&
+                !rightCheck.checked
+            ){
 
+                rightCheck.checked = true;
 
-      if(
-        tracks[i] &&
-        tracks[i].audio
-      ){
+                return;
+            }
 
-        tracks[i].audio.volume =
-          value;
-          
-        if(tracks[i].gainNode){
-          tracks[i].gainNode.gain.value = value;
+            updateChannelRouting(index);
         }
-
-      }
-
-
-      document.getElementById(
-        `volText-${i}`
-      ).innerText =
-        `${Math.round(value * 100)}%`;
-
-    }
-  );
+    );
 
 
-  // L / R Checkbox Logic
-  const leftCheck = card.querySelector('.left-check');
-  const rightCheck = card.querySelector('.right-check');
+    /*
+        VOLUME
+    */
 
-  function updateChannelRouting(){
-    const t = tracks[index];
-    if(!t || !audioCtx) return;
+    volumeSlider.addEventListener(
+        "input",
+        () => {
 
-    try{
-      // Disconnect previous connections from splitter to merger
-      t.splitter.disconnect(t.merger);
-    }catch(e){}
+            const value =
+                Number(volumeSlider.value);
 
-    if(leftCheck.checked && rightCheck.checked){
-      // Stereo: L -> L, R -> R
-      t.splitter.connect(t.merger, 0, 0);
-      t.splitter.connect(t.merger, 1, 1);
-    } else if(!leftCheck.checked && rightCheck.checked){
-      // Only Right channel: R -> L and R -> R (Dual Mono Right) or R -> R only
-      t.splitter.connect(t.merger, 1, 0);
-      t.splitter.connect(t.merger, 1, 1);
-    } else if(leftCheck.checked && !rightCheck.checked){
-      // Only Left channel: L -> L and L -> R (Dual Mono Left)
-      t.splitter.connect(t.merger, 0, 0);
-      t.splitter.connect(t.merger, 0, 1);
-    }
-  }
+            if(tracks[index]){
 
-  leftCheck.addEventListener('change', function(){
-    if(!leftCheck.checked && !rightCheck.checked){
-      rightCheck.checked = true; // Prevent both unchecked
-    }
-    updateChannelRouting();
-  });
+                tracks[index].audio.volume =
+                    value;
+            }
 
-  rightCheck.addEventListener('change', function(){
-    if(!leftCheck.checked && !rightCheck.checked){
-      leftCheck.checked = true; // Prevent both unchecked
-    }
-    updateChannelRouting();
-  });
-
+            volumeValue.textContent =
+                Math.round(value * 100) + "%";
+        }
+    );
 }
 
 
@@ -1295,606 +1101,14 @@ function createTrackCard(
    ESCAPE HTML
 ========================================================= */
 
-function escapeHTML(text){
+function escapeHTML(value){
 
-  return String(text)
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;')
-    .replace(/'/g,'&#039;');
-
+    return String(value)
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;")
+        .replace(/"/g,"&quot;")
+        .replace(/'/g,"&#039;");
 }
 
-
-/* =========================================================
-   MIME TYPE
-========================================================= */
-
-function getAudioMime(ext){
-
-  const map = {
-
-    wav:'audio/wav',
-
-    mp3:'audio/mpeg',
-
-    ogg:'audio/ogg',
-
-    flac:'audio/flac',
-
-    aac:'audio/aac',
-
-    m4a:'audio/mp4',
-
-    webm:'audio/webm',
-
-    opus:'audio/ogg'
-
-  };
-
-  return map[ext] ||
-    'audio/mpeg';
-
-}
-
-
-/* =========================================================
-   CLEAR OLD TRACKS
-========================================================= */
-
-function clearExistingTracks(){
-
-  tracks.forEach(
-    track => {
-
-      if(!track) return;
-
-
-      try{
-
-        track.audio.pause();
-
-        track.audio.removeAttribute(
-          'src'
-        );
-
-        track.audio.load();
-
-      }
-      catch(error){}
-
-
-      if(
-        track.objectURL
-      ){
-
-        URL.revokeObjectURL(
-          track.objectURL
-        );
-
-      }
-
-    }
-  );
-
-
-  tracks = [];
-
-  trackList.innerHTML = '';
-
-  isPlaying = false;
-
-  maxDuration = 0;
-
-  masterSeekbar.value = 0;
-
-  masterSeekbar.max = 0;
-
-  currentTimeEl.innerText =
-    '00:00';
-
-  durationEl.innerText =
-    '00:00';
-
-  masterPlayBtn.innerText =
-    '▶ Play All';
-
-  masterPlayBtn.style.background =
-    '#00e676';
-
-  masterPlayBtn.disabled =
-    true;
-
-  masterSeekbar.disabled =
-    true;
-
-}
-
-
-/* =========================================================
-   LOCK INPUTS
-========================================================= */
-
-function lockAllInputs(){
-
-  isLocked = true;
-
-
-  folderInput.disabled =
-    true;
-
-  fileInput.disabled =
-    true;
-
-
-  folderLabel.classList.add(
-    'disabled'
-  );
-
-  fileLabel.classList.add(
-    'disabled'
-  );
-
-
-  folderLabel.innerText =
-    '🔒 Locked';
-
-  fileLabel.innerText =
-    '🔒 Locked';
-
-}
-
-
-/* =========================================================
-   MAX DURATION
-========================================================= */
-
-function updateMaxDuration(){
-
-  maxDuration = 0;
-
-
-  tracks.forEach(
-    track => {
-
-      if(
-        track &&
-        track.isLoaded &&
-        !isNaN(
-          track.audio.duration
-        )
-      ){
-
-        if(
-          track.audio.duration >
-          maxDuration
-        ){
-
-          maxDuration =
-            track.audio.duration;
-
-        }
-
-      }
-
-    }
-  );
-
-
-  masterSeekbar.max =
-    maxDuration;
-
-
-  durationEl.innerText =
-    formatTime(
-      maxDuration
-    );
-
-}
-
-
-/* =========================================================
-   CHECK PLAY BUTTON
-========================================================= */
-
-function checkPlayButtonState(){
-
-  const hasLoaded =
-    tracks.some(
-      track =>
-        track &&
-        track.isLoaded
-    );
-
-
-  masterPlayBtn.disabled =
-    !hasLoaded;
-
-
-  masterSeekbar.disabled =
-    !hasLoaded;
-
-}
-
-
-/* =========================================================
-   PLAY ALL / PAUSE ALL
-========================================================= */
-
-masterPlayBtn.addEventListener(
-  'click',
-  async function(){
-
-    if(!tracks.length){
-      return;
-    }
-
-    initAudioContext();
-
-
-    if(!isPlaying){
-
-      const playPromises = [];
-
-
-      tracks.forEach(
-        function(track,index){
-
-          if(
-            track &&
-            track.isLoaded
-          ){
-
-            track.audio.currentTime =
-              parseFloat(
-                masterSeekbar.value
-              ) || 0;
-
-
-            playPromises.push(
-              track.audio.play()
-            );
-
-
-            const badge =
-              document.getElementById(
-                `badge-${index}`
-              );
-
-
-            const card =
-              document.getElementById(
-                `card-${index}`
-              );
-
-
-            if(badge){
-
-              badge.innerText =
-                '▶ Playing';
-
-              badge.classList.add(
-                'active'
-              );
-
-            }
-
-
-            if(card){
-
-              card.classList.add(
-                'playing'
-              );
-
-            }
-
-          }
-
-        }
-      );
-
-
-      try{
-
-        await Promise.all(
-          playPromises
-        );
-
-        isPlaying =
-          true;
-
-        masterPlayBtn.innerText =
-          '⏸ Pause All';
-
-        masterPlayBtn.style.background =
-          '#ff5252';
-
-      }
-      catch(error){
-
-        console.error(
-          error
-        );
-
-      }
-
-    }
-    else{
-
-      pauseAll();
-
-    }
-
-  }
-);
-
-
-/* =========================================================
-   PAUSE ALL
-========================================================= */
-
-function pauseAll(){
-
-  tracks.forEach(
-    function(track,index){
-
-      if(
-        track &&
-        track.isLoaded
-      ){
-
-        track.audio.pause();
-
-
-        const badge =
-          document.getElementById(
-            `badge-${index}`
-          );
-
-
-        const card =
-          document.getElementById(
-            `card-${index}`
-          );
-
-
-        if(badge){
-
-          badge.innerText =
-            '⏸ Paused';
-
-          badge.classList.remove(
-            'active'
-          );
-
-        }
-
-
-        if(card){
-
-          card.classList.remove(
-            'playing'
-          );
-
-        }
-
-      }
-
-    }
-  );
-
-
-  isPlaying =
-    false;
-
-
-  masterPlayBtn.innerText =
-    '▶ Play All';
-
-
-  masterPlayBtn.style.background =
-    '#00e676';
-
-}
-
-
-/* =========================================================
-   MASTER SEEKBAR
-========================================================= */
-
-masterSeekbar.addEventListener(
-  'input',
-  function(e){
-
-    const seekTime =
-      parseFloat(
-        e.target.value
-      );
-
-
-    tracks.forEach(
-      function(track){
-
-        if(
-          track &&
-          track.isLoaded
-        ){
-
-          try{
-
-            track.audio.currentTime =
-              seekTime;
-
-          }
-          catch(error){}
-
-        }
-
-      }
-    );
-
-
-    currentTimeEl.innerText =
-      formatTime(
-        seekTime
-      );
-
-  }
-);
-
-
-/* =========================================================
-   SYNCHRONIZED TIME UPDATE
-========================================================= */
-
-setInterval(
-  function(){
-
-    if(!isPlaying){
-      return;
-    }
-
-
-    const firstTrack =
-      tracks.find(
-        track =>
-          track &&
-          track.isLoaded
-      );
-
-
-    if(!firstTrack){
-      return;
-    }
-
-
-    const current =
-      firstTrack.audio.currentTime;
-
-
-    masterSeekbar.value =
-      current;
-
-
-    currentTimeEl.innerText =
-      formatTime(
-        current
-      );
-
-
-    const anyPlaying =
-      tracks.some(
-        track =>
-          track &&
-          track.isLoaded &&
-          !track.audio.paused
-      );
-
-
-    if(
-      !anyPlaying &&
-      current > 0
-    ){
-
-      const anyNotEnded =
-        tracks.some(
-          track =>
-            track &&
-            track.isLoaded &&
-            !track.audio.ended
-        );
-
-
-      if(!anyNotEnded){
-
-        pauseAll();
-
-      }
-
-    }
-
-  },
-  100
-);
-
-
-/* =========================================================
-   TIME FORMAT
-========================================================= */
-
-function formatTime(seconds){
-
-  if(
-    isNaN(seconds) ||
-    !isFinite(seconds)
-  ){
-
-    return '00:00';
-
-  }
-
-
-  const min =
-    Math.floor(
-      seconds / 60
-    );
-
-
-  const sec =
-    Math.floor(
-      seconds % 60
-    );
-
-
-  return (
-    (min < 10 ? '0' : '') +
-    min +
-    ':' +
-    (sec < 10 ? '0' : '') +
-    sec
-  );
-
-}
-
-
-/* =========================================================
-   LOADING
-========================================================= */
-
-function showLoading(text){
-
-  loadingBox.style.display =
-    'block';
-
-  loadingText.innerText =
-    text;
-
-}
-
-
-function hideLoading(){
-
-  loadingBox.style.display =
-    'none';
-
-}
-
-
-/* =========================================================
-   RESET
-========================================================= */
-
-reloadBtn.addEventListener(
-  'click',
-  function(){
-
-    window.location.reload();
-
-  }
-);
-
-</script>
-
-</body>
-</html>
+* ========================================================= INITIALIZE AUDIO ROUTING AFTER FILE LOAD ========================================================= */ function initializeTrackRouting(){ /* Web Audio nodes are created only after files are selected. The AudioContext may remain suspended until Play is pressed. */ tracks.forEach( (track,index) => { if(!track.sourceNode){ try{ setupChannelRouting( track, index ); }catch(error){ console.error( "Audio routing error:", error ); } } } ); } /* ========================================================= LOAD FOLDER ========================================================= */ async function loadFolderFiles(fileList){ showLoading( "Reading folder..." ); try{ const normalAudio = []; const zipFiles = []; for( const file of Array.from(fileList) ){ if(isAudioFile(file)){ normalAudio.push(file); }else if(isZipFile(file)){ zipFiles.push(file); } } const allAudioFiles = [ ...normalAudio ]; /* ZIP AUDIO EXTRACTION */ for( const zipFile of zipFiles ){ showLoading( "Opening " + zipFile.name + "..." ); try{ const zip = await JSZip.loadAsync(zipFile); const entries = Object.values(zip.files); for( const entry of entries ){ if(entry.dir){ continue; } const entryName = entry.name; const fakeFileName = entryName .split("/") .pop(); if(!isAudioFile({ name: fakeFileName })){ continue; } const blob = await entry.async("blob"); const file = new File( [blob], fakeFileName, { type: getAudioMimeType( fakeFileName ) } ); allAudioFiles.push(file); } }catch(error){ console.error( "ZIP error:", error ); alert( "Could not read ZIP file: " + zipFile.name ); } } if(allAudioFiles.length === 0){ hideLoading(); alert( "No supported audio files found." ); return; } clearExistingTracks(); showLoading( "Creating " + allAudioFiles.length + " players..." ); allAudioFiles.forEach( (file,index) => { createTrack( file, index ); } ); initializeTrackRouting(); updateMaxDuration(); checkPlayButtonState(); }catch(error){ console.error(error); alert( "Error loading folder." ); }finally{ hideLoading(); } } /* ========================================================= LOAD SELECTED FILES / ZIP ========================================================= */ async function loadSelectedFiles(fileList){ showLoading( "Loading selected files..." ); try{ const normalAudio = []; const zipFiles = []; for( const file of Array.from(fileList) ){ if(isAudioFile(file)){ normalAudio.push(file); }else if(isZipFile(file)){ zipFiles.push(file); } } const allAudioFiles = [ ...normalAudio ]; /* READ ZIP FILES */ for( const zipFile of zipFiles ){ showLoading( "Extracting " + zipFile.name + "..." ); try{ const zip = await JSZip.loadAsync(zipFile); const entries = Object.values(zip.files); for( const entry of entries ){ if(entry.dir){ continue; } const fakeFileName = entry.name .split("/") .pop(); if(!isAudioFile({ name: fakeFileName })){ continue; } const blob = await entry.async("blob"); const file = new File( [blob], fakeFileName, { type: getAudioMimeType( fakeFileName ) } ); allAudioFiles.push(file); } }catch(error){ console.error( "ZIP error:", error ); alert( "Could not read ZIP: " + zipFile.name ); } } if(allAudioFiles.length === 0){ hideLoading(); alert( "No supported audio files selected." ); return; } clearExistingTracks(); showLoading( "Creating " + allAudioFiles.length + " players..." ); allAudioFiles.forEach( (file,index) => { createTrack( file, index ); } ); initializeTrackRouting(); updateMaxDuration(); checkPlayButtonState(); }catch(error){ console.error(error); alert( "Error loading files." ); }finally{ hideLoading(); } } /* ========================================================= MIME TYPE ========================================================= */ function getAudioMimeType(fileName){ const ext = fileName .toLowerCase() .split(".") .pop(); const map = { mp3:"audio/mpeg", wav:"audio/wav", ogg:"audio/ogg", flac:"audio/flac", aac:"audio/aac", m4a:"audio/mp4", webm:"audio/webm", opus:"audio/ogg" }; return map[ext] || "audio/*"; } /* ========================================================= MAX DURATION ========================================================= */ function updateMaxDuration(){ let maxDuration = 0; tracks.forEach( track => { if( track.isLoaded && isFinite(track.audio.duration) ){ maxDuration = Math.max( maxDuration, track.audio.duration ); } } ); const seekbar = document.getElementById( "masterSeekbar" ); seekbar.max = maxDuration; seekbar.disabled = tracks.length === 0 || maxDuration <= 0; document.getElementById( "totalTime" ).textContent = formatTime(maxDuration); } /* ========================================================= PLAY BUTTON STATE ========================================================= */ function checkPlayButtonState(){ const button = document.getElementById( "playAllBtn" ); const hasLoaded = tracks.some( track => track.isLoaded ); button.disabled = !hasLoaded; } /* ========================================================= PLAY ALL ========================================================= */ async function playAll(){ if(tracks.length === 0){ return; } const ctx = getAudioContext(); if(!ctx){ return; } try{ if(ctx.state === "suspended"){ await ctx.resume(); } }catch(error){ console.error(error); } /* Synchronize all tracks */ const startTime = Number( document.getElementById( "masterSeekbar" ).value ); tracks.forEach( track => { if(!track.isLoaded){ return; } if( isFinite(startTime) && startTime >= 0 && startTime < track.audio.duration ){ try{ track.audio.currentTime = startTime; }catch(e){} } } ); /* PLAY EVERY TRACK TOGETHER */ const promises = []; tracks.forEach( track => { if(!track.isLoaded){ return; } /* Apply current L/R state before playing. */ updateChannelRouting( tracks.indexOf(track) ); const promise = track.audio.play(); if(promise){ promises.push( promise.catch( error => { console.warn( "Play error:", error ); } ) ); } } ); await Promise.all(promises); isPlayingAll = true; } /* ========================================================= PAUSE ALL ========================================================= */ function pauseAll(){ tracks.forEach( track => { try{ track.audio.pause(); }catch(e){} } ); isPlayingAll = false; } /* ========================================================= CHECK ALL ENDED ========================================================= */ function checkAllEnded(){ if(tracks.length === 0){ return; } const anyPlaying = tracks.some( track => !track.audio.paused && !track.audio.ended ); if(!anyPlaying){ isPlayingAll = false; } } /* ========================================================= MASTER SEEK ========================================================= */ document .getElementById("masterSeekbar") .addEventListener( "input", function(){ if(masterUpdating){ return; } const time = Number(this.value); tracks.forEach( track => { if( track.isLoaded && isFinite(track.audio.duration) ){ try{ track.audio.currentTime = Math.min( time, track.audio.duration ); }catch(e){} } } ); document.getElementById( "currentTime" ).textContent = formatTime(time); } ); /* ========================================================= MASTER PLAY ========================================================= */ document .getElementById("playAllBtn") .addEventListener( "click", playAll ); /* ========================================================= MASTER PAUSE ========================================================= */ document .getElementById("pauseAllBtn") .addEventListener( "click", pauseAll ); /* ========================================================= FOLDER INPUT ========================================================= */ document .getElementById("folderInput") .addEventListener( "change", async function(){ if(this.files.length > 0){ await loadFolderFiles( this.files ); } this.value = ""; } ); /* ========================================================= FILE INPUT ========================================================= */ document .getElementById("fileInput") .addEventListener( "change", async function(){ if(this.files.length > 0){ await loadSelectedFiles( this.files ); } this.value = ""; } ); /* ========================================================= RESET ========================================================= */ document .getElementById("resetBtn") .addEventListener( "click", () => { clearExistingTracks(); } ); /* ========================================================= MASTER TIME UPDATE ========================================================= */ setInterval( () => { if(tracks.length === 0){ return; } const firstTrack = tracks.find( track => track.isLoaded ); if(!firstTrack){ return; } if( !firstTrack.audio.paused && !firstTrack.audio.ended ){ const current = firstTrack.audio.currentTime; masterUpdating = true; const seekbar = document.getElementById( "masterSeekbar" ); seekbar.value = Math.min( current, Number(seekbar.max) || current ); document.getElementById( "currentTime" ).textContent = formatTime(current); masterUpdating = false; } checkAllEnded(); }, 100 ); </script> </body> </html>
