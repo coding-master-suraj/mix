@@ -1,0 +1,3123 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Premium Multi Track Audio Player</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<style>
+*{
+    box-sizing:border-box;
+}
+
+:root{
+    --bg:#05070c;
+    --panel:rgba(17,23,35,.82);
+    --panel2:rgba(10,15,25,.92);
+    --border:rgba(120,150,190,.18);
+    --text:#f5f8ff;
+    --muted:#8794aa;
+    --blue:#42aaff;
+    --blue2:#1477ff;
+    --green:#42e6a4;
+    --red:#ff5e72;
+}
+
+body{
+    margin:0;
+    min-height:100vh;
+    font-family:Inter,Arial,Helvetica,sans-serif;
+    color:var(--text);
+
+    background:
+        radial-gradient(
+            circle at 15% 10%,
+            rgba(37,120,255,.13),
+            transparent 30%
+        ),
+        radial-gradient(
+            circle at 85% 15%,
+            rgba(0,225,190,.08),
+            transparent 30%
+        ),
+        linear-gradient(
+            145deg,
+            #03050a,
+            #080c14 50%,
+            #04060b
+        );
+
+    overflow-x:hidden;
+}
+
+.container{
+    width:min(1250px,94%);
+    margin:auto;
+    padding:24px 0 45px;
+}
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.header{
+    text-align:center;
+    margin-bottom:22px;
+}
+
+.logo{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+
+    width:58px;
+    height:58px;
+
+    border-radius:18px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(67,174,255,.25),
+            rgba(33,91,255,.08)
+        );
+
+    border:1px solid rgba(89,176,255,.3);
+
+    box-shadow:
+        0 0 35px rgba(45,145,255,.12),
+        inset 0 1px 0 rgba(255,255,255,.08);
+
+    font-size:28px;
+    margin-bottom:10px;
+}
+
+h1{
+    margin:0;
+    font-size:30px;
+    font-weight:800;
+    letter-spacing:.4px;
+
+    background:
+        linear-gradient(
+            90deg,
+            #ffffff,
+            #79c8ff,
+            #ffffff
+        );
+
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+}
+
+.subtitle{
+    margin-top:7px;
+    color:var(--muted);
+    font-size:12px;
+}
+
+
+/* =========================================================
+   TOP BUTTONS
+========================================================= */
+
+.top-buttons{
+    display:flex;
+    justify-content:center;
+    gap:12px;
+    flex-wrap:wrap;
+    margin-bottom:20px;
+}
+
+button,
+.file-label{
+    position:relative;
+
+    border:1px solid var(--border);
+
+    padding:12px 18px;
+
+    border-radius:12px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(30,40,58,.95),
+            rgba(12,17,28,.95)
+        );
+
+    color:#fff;
+
+    cursor:pointer;
+
+    font-size:13px;
+    font-weight:700;
+
+    transition:
+        transform .2s,
+        box-shadow .2s,
+        border-color .2s,
+        opacity .2s;
+
+    box-shadow:
+        0 8px 25px rgba(0,0,0,.2),
+        inset 0 1px 0 rgba(255,255,255,.05);
+}
+
+button:hover,
+.file-label:hover{
+    transform:translateY(-1px);
+
+    border-color:
+        rgba(67,170,255,.45);
+
+    box-shadow:
+        0 10px 30px rgba(0,0,0,.3),
+        0 0 18px rgba(55,157,255,.08);
+}
+
+button:active,
+.file-label:active{
+    transform:scale(.98);
+}
+
+button:disabled{
+    opacity:.4;
+    cursor:not-allowed;
+    transform:none;
+}
+
+input[type="file"]{
+    display:none;
+}
+
+
+/* =========================================================
+   SOURCE BUTTON LOCK
+========================================================= */
+
+.file-label.locked{
+    opacity:.38;
+    cursor:not-allowed;
+    filter:grayscale(.7);
+    pointer-events:none;
+}
+
+.file-label.locked::after{
+    content:"🔒";
+
+    position:absolute;
+    right:9px;
+    top:7px;
+
+    font-size:11px;
+}
+
+
+/* =========================================================
+   MASTER
+========================================================= */
+
+.master{
+    position:relative;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(19,27,41,.88),
+            rgba(7,11,19,.94)
+        );
+
+    border:1px solid var(--border);
+
+    border-radius:22px;
+
+    padding:20px;
+
+    margin-bottom:22px;
+
+    box-shadow:
+        0 20px 60px rgba(0,0,0,.3),
+        inset 0 1px 0 rgba(255,255,255,.04);
+
+    backdrop-filter:blur(16px);
+}
+
+.master-top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:15px;
+    margin-bottom:17px;
+}
+
+.master-title{
+    display:flex;
+    align-items:center;
+    gap:10px;
+
+    font-size:14px;
+    font-weight:800;
+}
+
+.master-dot{
+    width:9px;
+    height:9px;
+    border-radius:50%;
+
+    background:var(--green);
+
+    box-shadow:
+        0 0 12px var(--green);
+}
+
+.master-status{
+    color:var(--muted);
+    font-size:11px;
+}
+
+
+/* =========================================================
+   ONLY MASTER PLAY / PAUSE BUTTON
+========================================================= */
+
+.master-controls{
+    display:flex;
+    justify-content:center;
+    margin-bottom:18px;
+}
+
+#masterPlayBtn{
+    min-width:190px;
+
+    padding:13px 25px;
+
+    border-radius:14px;
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--blue2),
+            #35b5ff
+        );
+
+    border-color:
+        rgba(100,205,255,.5);
+
+    box-shadow:
+        0 8px 30px rgba(35,135,255,.22),
+        inset 0 1px 0 rgba(255,255,255,.25);
+}
+
+#masterPlayBtn:hover{
+    box-shadow:
+        0 10px 35px rgba(35,135,255,.35);
+}
+
+#masterPlayBtn.pause-mode{
+    background:
+        linear-gradient(
+            135deg,
+            #b73551,
+            #ff6576
+        );
+
+    border-color:
+        rgba(255,140,155,.4);
+
+    box-shadow:
+        0 8px 30px rgba(255,60,90,.2);
+}
+
+
+/* =========================================================
+   SEEK BAR
+========================================================= */
+
+.seek-wrap{
+    padding:5px 2px;
+}
+
+#masterSeekbar{
+    width:100%;
+    height:6px;
+
+    appearance:none;
+
+    border-radius:10px;
+
+    background:#202a3b;
+
+    outline:none;
+    cursor:pointer;
+}
+
+#masterSeekbar:disabled{
+    opacity:.45;
+    cursor:not-allowed;
+}
+
+#masterSeekbar::-webkit-slider-thumb{
+    appearance:none;
+
+    width:16px;
+    height:16px;
+
+    border-radius:50%;
+
+    background:#56baff;
+
+    border:3px solid #0a101b;
+
+    box-shadow:
+        0 0 12px rgba(70,180,255,.7);
+
+    cursor:pointer;
+}
+
+#masterSeekbar::-moz-range-thumb{
+    width:16px;
+    height:16px;
+
+    border-radius:50%;
+
+    background:#56baff;
+
+    border:3px solid #0a101b;
+
+    cursor:pointer;
+}
+
+.time-row{
+    display:flex;
+    justify-content:space-between;
+
+    font-size:11px;
+
+    color:#93a1b6;
+
+    margin-top:8px;
+}
+
+
+/* =========================================================
+   TRACK GRID
+========================================================= */
+
+.tracks{
+    display:grid;
+
+    grid-template-columns:
+        repeat(
+            auto-fit,
+            minmax(300px,1fr)
+        );
+
+    gap:17px;
+}
+
+
+/* =========================================================
+   PREMIUM TRACK CARD
+========================================================= */
+
+.track{
+    position:relative;
+    overflow:hidden;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(22,30,45,.9),
+            rgba(8,12,20,.96)
+        );
+
+    border:1px solid var(--border);
+
+    border-radius:20px;
+
+    padding:17px;
+
+    min-width:0;
+
+    box-shadow:
+        0 15px 45px rgba(0,0,0,.28),
+        inset 0 1px 0 rgba(255,255,255,.045);
+
+    backdrop-filter:blur(14px);
+
+    transition:
+        transform .25s,
+        border-color .25s,
+        box-shadow .25s;
+}
+
+.track::before{
+    content:"";
+
+    position:absolute;
+
+    left:0;
+    top:0;
+
+    width:100%;
+    height:2px;
+
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            rgba(65,174,255,.8),
+            transparent
+        );
+
+    opacity:.55;
+}
+
+.track:hover{
+    transform:translateY(-3px);
+
+    border-color:
+        rgba(75,171,255,.28);
+
+    box-shadow:
+        0 20px 55px rgba(0,0,0,.38),
+        0 0 25px rgba(45,150,255,.05);
+}
+
+
+/* =========================================================
+   TRACK HEADER
+========================================================= */
+
+.track-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+
+    margin-bottom:10px;
+}
+
+.track-number{
+    display:flex;
+    align-items:center;
+    gap:8px;
+
+    font-size:15px;
+    font-weight:800;
+}
+
+.track-number::before{
+    content:"";
+
+    width:7px;
+    height:7px;
+
+    border-radius:50%;
+
+    background:#4d5d76;
+}
+
+.status{
+    font-size:10px;
+
+    padding:5px 9px;
+
+    border-radius:20px;
+
+    background:
+        rgba(90,105,130,.12);
+
+    border:1px solid
+        rgba(130,150,180,.13);
+
+    color:#9aa7bb;
+}
+
+.status.loaded{
+    background:
+        rgba(40,210,140,.09);
+
+    border-color:
+        rgba(55,225,155,.18);
+
+    color:#55e6a5;
+}
+
+.status.playing{
+    background:
+        rgba(60,165,255,.11);
+
+    border-color:
+        rgba(70,180,255,.25);
+
+    color:#66c1ff;
+
+    box-shadow:
+        0 0 15px rgba(55,165,255,.08);
+}
+
+
+/* =========================================================
+   FILE NAME
+========================================================= */
+
+.file-name{
+    font-size:12px;
+
+    color:#aebbd0;
+
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+
+    margin-bottom:13px;
+
+    padding:8px 10px;
+
+    background:
+        rgba(0,0,0,.17);
+
+    border-radius:9px;
+
+    border:1px solid
+        rgba(255,255,255,.035);
+}
+
+
+/* =========================================================
+   CHANNEL BOX
+========================================================= */
+
+.channel-box{
+    display:flex;
+    align-items:center;
+    gap:12px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(4,8,15,.82),
+            rgba(13,19,29,.8)
+        );
+
+    border:1px solid
+        rgba(100,130,170,.12);
+
+    padding:10px 11px;
+
+    border-radius:12px;
+
+    margin-bottom:13px;
+}
+
+.channel-title{
+    color:#7f8da4;
+
+    font-size:10px;
+
+    text-transform:uppercase;
+
+    letter-spacing:.8px;
+
+    margin-right:auto;
+}
+
+.channel-option{
+    display:flex;
+    align-items:center;
+
+    gap:5px;
+
+    font-size:11px;
+
+    color:#b9c5d6;
+
+    cursor:pointer;
+    user-select:none;
+}
+
+.channel-option input{
+    width:17px;
+    height:17px;
+
+    cursor:pointer;
+
+    accent-color:#38a8ff;
+}
+
+
+/* =========================================================
+   VOLUME
+========================================================= */
+
+.volume-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+
+.volume-label{
+    font-size:10px;
+
+    color:#7f8da4;
+
+    text-transform:uppercase;
+
+    letter-spacing:.7px;
+
+    width:52px;
+}
+
+.volume-slider{
+    flex:1;
+
+    height:4px;
+
+    appearance:none;
+
+    background:#263247;
+
+    border-radius:10px;
+
+    cursor:pointer;
+}
+
+.volume-slider::-webkit-slider-thumb{
+    appearance:none;
+
+    width:13px;
+    height:13px;
+
+    border-radius:50%;
+
+    background:#58baff;
+
+    cursor:pointer;
+}
+
+.volume-slider::-moz-range-thumb{
+    width:13px;
+    height:13px;
+
+    border-radius:50%;
+
+    background:#58baff;
+
+    cursor:pointer;
+}
+
+.volume-value{
+    width:39px;
+
+    text-align:right;
+
+    font-size:10px;
+
+    color:#93a2b7;
+}
+
+
+/* =========================================================
+   EMPTY
+========================================================= */
+
+.empty{
+    grid-column:1/-1;
+
+    text-align:center;
+
+    color:#65738a;
+
+    padding:55px 15px;
+
+    border:1px dashed
+        rgba(100,130,170,.2);
+
+    border-radius:18px;
+
+    background:
+        rgba(12,17,26,.4);
+}
+
+
+/* =========================================================
+   LOADING
+========================================================= */
+
+.loading{
+    display:none;
+
+    position:fixed;
+    inset:0;
+
+    background:
+        rgba(2,5,10,.84);
+
+    backdrop-filter:blur(8px);
+
+    z-index:1000;
+
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+
+    gap:14px;
+}
+
+.loading.show{
+    display:flex;
+}
+
+.spinner{
+    width:45px;
+    height:45px;
+
+    border:3px solid
+        rgba(100,140,190,.15);
+
+    border-top-color:#51b8ff;
+
+    border-radius:50%;
+
+    animation:spin .75s linear infinite;
+
+    box-shadow:
+        0 0 25px rgba(50,160,255,.12);
+}
+
+#loadingText{
+    font-size:12px;
+    color:#a9b7ca;
+}
+
+@keyframes spin{
+    to{
+        transform:rotate(360deg);
+    }
+}
+
+
+/* =========================================================
+   INFO
+========================================================= */
+
+.info{
+    text-align:center;
+
+    color:#66758b;
+
+    font-size:10px;
+
+    margin-top:22px;
+
+    letter-spacing:.3px;
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media(max-width:600px){
+
+    .container{
+        width:94%;
+        padding-top:17px;
+    }
+
+    h1{
+        font-size:23px;
+    }
+
+    .top-buttons{
+        display:grid;
+        grid-template-columns:1fr;
+    }
+
+    button,
+    .file-label{
+        width:100%;
+        text-align:center;
+    }
+
+    .tracks{
+        grid-template-columns:1fr;
+    }
+
+    .master{
+        padding:16px;
+        border-radius:18px;
+    }
+
+    .track{
+        border-radius:17px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="loading" id="loading">
+
+    <div class="spinner"></div>
+
+    <div id="loadingText">
+        Loading...
+    </div>
+
+</div>
+
+
+<div class="container">
+
+
+    <!-- =====================================================
+         HEADER
+    ====================================================== -->
+
+    <div class="header">
+
+        <div class="logo">
+            🎧
+        </div>
+
+        <h1>
+            Multi Track Audio Player
+        </h1>
+
+        <div class="subtitle">
+            Synchronized Stereo Audio Console
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         SOURCE BUTTONS
+    ====================================================== -->
+
+    <div class="top-buttons">
+
+        <label
+            class="file-label"
+            id="folderLabel"
+        >
+
+            📁 Select Folder
+
+            <input
+                type="file"
+                id="folderInput"
+                webkitdirectory
+                directory
+                multiple
+            >
+
+        </label>
+
+
+        <label
+            class="file-label"
+            id="fileLabel"
+        >
+
+            🎵 Select Files / ZIP
+
+            <input
+                type="file"
+                id="fileInput"
+                multiple
+                accept="audio/*,.wav,.mp3,.ogg,.flac,.aac,.m4a,.webm,.opus,.zip"
+            >
+
+        </label>
+
+
+        <button id="resetBtn">
+
+            🔄 New Load / Reset
+
+        </button>
+
+    </div>
+
+
+    <!-- =====================================================
+         MASTER CONTROL
+    ====================================================== -->
+
+    <div class="master">
+
+        <div class="master-top">
+
+            <div class="master-title">
+
+                <span class="master-dot"></span>
+
+                MASTER CONTROL
+
+            </div>
+
+            <div
+                class="master-status"
+                id="masterStatus"
+            >
+                Ready
+            </div>
+
+        </div>
+
+
+        <div class="master-controls">
+
+            <!-- ONLY PLAY / PAUSE BUTTON -->
+
+            <button id="masterPlayBtn">
+
+                ▶ Play All
+
+            </button>
+
+        </div>
+
+
+        <div class="seek-wrap">
+
+            <input
+                type="range"
+                id="masterSeekbar"
+                min="0"
+                max="0"
+                value="0"
+                step="0.01"
+                disabled
+            >
+
+            <div class="time-row">
+
+                <span id="currentTime">
+                    00:00
+                </span>
+
+                <span id="totalTime">
+                    00:00
+                </span>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         TRACKS
+    ====================================================== -->
+
+    <div
+        id="tracksContainer"
+        class="tracks"
+    >
+
+        <div class="empty">
+
+            🎵 Select a folder, audio files,
+            or ZIP file to create players.
+
+        </div>
+
+    </div>
+
+
+    <div class="info">
+
+        Left / Right channels are independently controlled
+        for every player.
+
+    </div>
+
+</div>
+
+
+<script>
+
+const AUDIO_EXTENSIONS = [
+    "wav",
+    "mp3",
+    "ogg",
+    "flac",
+    "aac",
+    "m4a",
+    "webm",
+    "opus"
+];
+
+
+let tracks = [];
+
+let audioContext = null;
+
+let isPlayingAll = false;
+
+let masterUpdating = false;
+
+
+/* =========================================================
+   AUDIO CONTEXT
+========================================================= */
+
+function getAudioContext(){
+
+    if(!audioContext){
+
+        const AudioContext =
+            window.AudioContext ||
+            window.webkitAudioContext;
+
+        if(!AudioContext){
+
+            alert(
+                "Web Audio API is not supported in this browser."
+            );
+
+            return null;
+        }
+
+        audioContext =
+            new AudioContext();
+    }
+
+    return audioContext;
+}
+
+
+/* =========================================================
+   LOCK SOURCE BUTTONS
+========================================================= */
+
+function lockSourceButtons(){
+
+    const folderLabel =
+        document.getElementById(
+            "folderLabel"
+        );
+
+    const fileLabel =
+        document.getElementById(
+            "fileLabel"
+        );
+
+    const folderInput =
+        document.getElementById(
+            "folderInput"
+        );
+
+    const fileInput =
+        document.getElementById(
+            "fileInput"
+        );
+
+
+    folderLabel.classList.add(
+        "locked"
+    );
+
+    fileLabel.classList.add(
+        "locked"
+    );
+
+
+    folderInput.disabled = true;
+
+    fileInput.disabled = true;
+}
+
+
+/* =========================================================
+   UNLOCK SOURCE BUTTONS
+========================================================= */
+
+function unlockSourceButtons(){
+
+    const folderLabel =
+        document.getElementById(
+            "folderLabel"
+        );
+
+    const fileLabel =
+        document.getElementById(
+            "fileLabel"
+        );
+
+    const folderInput =
+        document.getElementById(
+            "folderInput"
+        );
+
+    const fileInput =
+        document.getElementById(
+            "fileInput"
+        );
+
+
+    folderLabel.classList.remove(
+        "locked"
+    );
+
+    fileLabel.classList.remove(
+        "locked"
+    );
+
+
+    folderInput.disabled = false;
+
+    fileInput.disabled = false;
+}
+
+
+/* =========================================================
+   FILE CHECK
+========================================================= */
+
+function isAudioFile(file){
+
+    const name =
+        file.name.toLowerCase();
+
+    const ext =
+        name.includes(".")
+        ? name.split(".").pop()
+        : "";
+
+    return AUDIO_EXTENSIONS.includes(ext);
+}
+
+
+function isZipFile(file){
+
+    const name =
+        file.name.toLowerCase();
+
+    return (
+        name.endsWith(".zip") ||
+        file.type === "application/zip" ||
+        file.type ===
+            "application/x-zip-compressed"
+    );
+}
+
+
+/* =========================================================
+   LOADING
+========================================================= */
+
+function showLoading(text){
+
+    document
+        .getElementById("loadingText")
+        .textContent = text;
+
+    document
+        .getElementById("loading")
+        .classList.add("show");
+}
+
+
+function hideLoading(){
+
+    document
+        .getElementById("loading")
+        .classList.remove("show");
+}
+
+
+/* =========================================================
+   TIME
+========================================================= */
+
+function formatTime(seconds){
+
+    if(
+        !isFinite(seconds) ||
+        seconds < 0
+    ){
+        return "00:00";
+    }
+
+
+    const hours =
+        Math.floor(
+            seconds / 3600
+        );
+
+    const minutes =
+        Math.floor(
+            (seconds % 3600) / 60
+        );
+
+    const secs =
+        Math.floor(
+            seconds % 60
+        );
+
+
+    if(hours > 0){
+
+        return (
+            String(hours).padStart(2,"0") +
+            ":" +
+            String(minutes).padStart(2,"0") +
+            ":" +
+            String(secs).padStart(2,"0")
+        );
+    }
+
+
+    return (
+        String(minutes).padStart(2,"0") +
+        ":" +
+        String(secs).padStart(2,"0")
+    );
+}
+
+
+/* =========================================================
+   ESCAPE
+========================================================= */
+
+function escapeHTML(value){
+
+    return String(value)
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;")
+        .replace(/"/g,"&quot;")
+        .replace(/'/g,"&#039;");
+}
+
+
+/* =========================================================
+   CLEAR EXISTING TRACKS
+========================================================= */
+
+function clearExistingTracks(){
+
+    tracks.forEach(track => {
+
+        try{
+            track.audio.pause();
+        }catch(e){}
+
+
+        try{
+
+            if(track.sourceNode)
+                track.sourceNode.disconnect();
+
+            if(track.splitter)
+                track.splitter.disconnect();
+
+            if(track.leftGain)
+                track.leftGain.disconnect();
+
+            if(track.rightGain)
+                track.rightGain.disconnect();
+
+            if(track.merger)
+                track.merger.disconnect();
+
+        }catch(e){}
+
+
+        try{
+
+            URL.revokeObjectURL(
+                track.objectURL
+            );
+
+        }catch(e){}
+
+    });
+
+
+    tracks = [];
+
+    isPlayingAll = false;
+
+
+    document
+        .getElementById(
+            "tracksContainer"
+        )
+        .innerHTML = `
+
+            <div class="empty">
+
+                🎵 Select a folder, audio files,
+                or ZIP file to create players.
+
+            </div>
+        `;
+
+
+    const seekbar =
+        document.getElementById(
+            "masterSeekbar"
+        );
+
+
+    seekbar.value = 0;
+
+    seekbar.max = 0;
+
+    seekbar.disabled = true;
+
+
+    document
+        .getElementById(
+            "currentTime"
+        )
+        .textContent = "00:00";
+
+
+    document
+        .getElementById(
+            "totalTime"
+        )
+        .textContent = "00:00";
+
+
+    document
+        .getElementById(
+            "masterStatus"
+        )
+        .textContent = "Ready";
+
+
+    const masterButton =
+        document.getElementById(
+            "masterPlayBtn"
+        );
+
+
+    masterButton.textContent =
+        "▶ Play All";
+
+    masterButton.classList.remove(
+        "pause-mode"
+    );
+
+    masterButton.disabled = true;
+
+
+    unlockSourceButtons();
+}
+
+
+/* =========================================================
+   CHANNEL ROUTING
+========================================================= */
+
+function setupChannelRouting(
+    track,
+    index
+){
+
+    const ctx =
+        getAudioContext();
+
+    if(!ctx){
+        return;
+    }
+
+
+    const source =
+        ctx.createMediaElementSource(
+            track.audio
+        );
+
+
+    const splitter =
+        ctx.createChannelSplitter(2);
+
+
+    const leftGain =
+        ctx.createGain();
+
+
+    const rightGain =
+        ctx.createGain();
+
+
+    const merger =
+        ctx.createChannelMerger(2);
+
+
+    source.connect(
+        splitter
+    );
+
+
+    /* LEFT */
+
+    splitter.connect(
+        leftGain,
+        0
+    );
+
+    leftGain.connect(
+        merger,
+        0,
+        0
+    );
+
+
+    /* RIGHT */
+
+    splitter.connect(
+        rightGain,
+        1
+    );
+
+    rightGain.connect(
+        merger,
+        0,
+        1
+    );
+
+
+    /* OUTPUT */
+
+    merger.connect(
+        ctx.destination
+    );
+
+
+    leftGain.gain.value = 1;
+
+    rightGain.gain.value = 1;
+
+
+    track.sourceNode =
+        source;
+
+    track.splitter =
+        splitter;
+
+    track.leftGain =
+        leftGain;
+
+    track.rightGain =
+        rightGain;
+
+    track.merger =
+        merger;
+
+    track.audioContext =
+        ctx;
+}
+
+
+/* =========================================================
+   CHANNEL UPDATE
+========================================================= */
+
+function updateChannelRouting(index){
+
+    const track =
+        tracks[index];
+
+    if(!track){
+        return;
+    }
+
+
+    const card =
+        document.querySelector(
+            `.track[data-index="${index}"]`
+        );
+
+
+    if(!card){
+        return;
+    }
+
+
+    const left =
+        card.querySelector(
+            ".left-check"
+        );
+
+
+    const right =
+        card.querySelector(
+            ".right-check"
+        );
+
+
+    /* Both cannot be OFF */
+
+    if(
+        !left.checked &&
+        !right.checked
+    ){
+
+        left.checked = true;
+    }
+
+
+    const ctx =
+        track.audioContext ||
+        audioContext;
+
+
+    if(!ctx){
+        return;
+    }
+
+
+    if(track.leftGain){
+
+        track.leftGain.gain.setTargetAtTime(
+            left.checked ? 1 : 0,
+            ctx.currentTime,
+            .005
+        );
+    }
+
+
+    if(track.rightGain){
+
+        track.rightGain.gain.setTargetAtTime(
+            right.checked ? 1 : 0,
+            ctx.currentTime,
+            .005
+        );
+    }
+}
+
+
+/* =========================================================
+   CREATE TRACK
+========================================================= */
+
+function createTrack(
+    file,
+    index
+){
+
+    const audio =
+        new Audio();
+
+
+    audio.preload =
+        "metadata";
+
+
+    audio.volume =
+        .8;
+
+
+    audio.src =
+        URL.createObjectURL(file);
+
+
+    const track = {
+
+        audio:audio,
+
+        fileName:file.name,
+
+        objectURL:audio.src,
+
+        isLoaded:false,
+
+        sourceNode:null,
+
+        splitter:null,
+
+        leftGain:null,
+
+        rightGain:null,
+
+        merger:null,
+
+        audioContext:null
+    };
+
+
+    tracks.push(track);
+
+
+    createTrackCard(
+        index,
+        file.name
+    );
+
+
+    audio.addEventListener(
+        "loadedmetadata",
+        () => {
+
+            track.isLoaded =
+                true;
+
+
+            const card =
+                document.querySelector(
+                    `.track[data-index="${index}"]`
+                );
+
+
+            if(card){
+
+                const status =
+                    card.querySelector(
+                        ".status"
+                    );
+
+
+                status.textContent =
+                    "Loaded";
+
+
+                status.classList.add(
+                    "loaded"
+                );
+
+
+                const time =
+                    card.querySelector(
+                        ".track-time"
+                    );
+
+
+                time.textContent =
+                    "00:00 / " +
+                    formatTime(
+                        audio.duration
+                    );
+            }
+
+
+            updateMaxDuration();
+
+            checkPlayButtonState();
+        }
+    );
+
+
+    audio.addEventListener(
+        "timeupdate",
+        () => {
+
+            const card =
+                document.querySelector(
+                    `.track[data-index="${index}"]`
+                );
+
+
+            if(!card){
+                return;
+            }
+
+
+            const time =
+                card.querySelector(
+                    ".track-time"
+                );
+
+
+            time.textContent =
+                formatTime(
+                    audio.currentTime
+                ) +
+                " / " +
+                formatTime(
+                    audio.duration
+                );
+        }
+    );
+
+
+    audio.addEventListener(
+        "play",
+        () => {
+
+            updateTrackStatus(
+                index,
+                "Playing"
+            );
+        }
+    );
+
+
+    audio.addEventListener(
+        "pause",
+        () => {
+
+            if(audio.ended){
+                return;
+            }
+
+
+            updateTrackStatus(
+                index,
+                "Loaded"
+            );
+        }
+    );
+
+
+    audio.addEventListener(
+        "ended",
+        () => {
+
+            updateTrackStatus(
+                index,
+                "Ended"
+            );
+
+
+            checkAllEnded();
+        }
+    );
+}
+
+
+/* =========================================================
+   TRACK STATUS
+========================================================= */
+
+function updateTrackStatus(
+    index,
+    statusText
+){
+
+    const card =
+        document.querySelector(
+            `.track[data-index="${index}"]`
+        );
+
+
+    if(!card){
+        return;
+    }
+
+
+    const status =
+        card.querySelector(
+            ".status"
+        );
+
+
+    status.textContent =
+        statusText;
+
+
+    status.classList.remove(
+        "playing",
+        "loaded"
+    );
+
+
+    if(statusText === "Playing"){
+
+        status.classList.add(
+            "playing"
+        );
+
+    }else if(
+        statusText === "Loaded"
+    ){
+
+        status.classList.add(
+            "loaded"
+        );
+    }
+}
+
+
+/* =========================================================
+   CREATE TRACK CARD
+   =========================================================
+   NOTE:
+   Track Play/Pause button has been completely removed.
+   Only Master Control handles Play/Pause.
+========================================================= */
+
+function createTrackCard(
+    index,
+    fileName
+){
+
+    const container =
+        document.getElementById(
+            "tracksContainer"
+        );
+
+
+    if(index === 0){
+
+        container.innerHTML =
+            "";
+    }
+
+
+    const card =
+        document.createElement(
+            "div"
+        );
+
+
+    card.className =
+        "track";
+
+
+    card.dataset.index =
+        index;
+
+
+    card.innerHTML = `
+
+        <div class="track-header">
+
+            <div class="track-number">
+
+                Track ${index + 1}
+
+            </div>
+
+            <div class="status">
+
+                Loading
+
+            </div>
+
+        </div>
+
+
+        <div
+            class="file-name"
+            title="${escapeHTML(fileName)}"
+        >
+
+            ${escapeHTML(fileName)}
+
+        </div>
+
+
+        <!-- NO TRACK PLAY/PAUSE BUTTON -->
+
+
+        <div class="channel-box">
+
+            <span class="channel-title">
+                Speaker
+            </span>
+
+
+            <label class="channel-option">
+
+                <input
+                    type="checkbox"
+                    class="channel-check left-check"
+                    checked
+                >
+
+                <span>Left</span>
+
+            </label>
+
+
+            <label class="channel-option">
+
+                <input
+                    type="checkbox"
+                    class="channel-check right-check"
+                    checked
+                >
+
+                <span>Right</span>
+
+            </label>
+
+        </div>
+
+
+        <div class="volume-row">
+
+            <span class="volume-label">
+                Volume
+            </span>
+
+
+            <input
+                type="range"
+                class="volume-slider"
+                min="0"
+                max="1"
+                step="0.01"
+                value="0.8"
+            >
+
+
+            <span class="volume-value">
+                80%
+            </span>
+
+        </div>
+
+    `;
+
+
+    container.appendChild(
+        card
+    );
+
+
+    const leftCheck =
+        card.querySelector(
+            ".left-check"
+        );
+
+
+    const rightCheck =
+        card.querySelector(
+            ".right-check"
+        );
+
+
+    const volumeSlider =
+        card.querySelector(
+            ".volume-slider"
+        );
+
+
+    const volumeValue =
+        card.querySelector(
+            ".volume-value"
+        );
+
+
+    /* LEFT */
+
+    leftCheck.addEventListener(
+        "change",
+        () => {
+
+            if(
+                !leftCheck.checked &&
+                !rightCheck.checked
+            ){
+
+                leftCheck.checked =
+                    true;
+
+                return;
+            }
+
+
+            updateChannelRouting(
+                index
+            );
+        }
+    );
+
+
+    /* RIGHT */
+
+    rightCheck.addEventListener(
+        "change",
+        () => {
+
+            if(
+                !leftCheck.checked &&
+                !rightCheck.checked
+            ){
+
+                rightCheck.checked =
+                    true;
+
+                return;
+            }
+
+
+            updateChannelRouting(
+                index
+            );
+        }
+    );
+
+
+    /* VOLUME */
+
+    volumeSlider.addEventListener(
+        "input",
+        () => {
+
+            const value =
+                Number(
+                    volumeSlider.value
+                );
+
+
+            if(tracks[index]){
+
+                tracks[index]
+                    .audio
+                    .volume =
+                    value;
+            }
+
+
+            volumeValue.textContent =
+                Math.round(
+                    value * 100
+                ) + "%";
+        }
+    );
+}
+
+
+/* =========================================================
+   INITIALIZE ROUTING
+========================================================= */
+
+function initializeTrackRouting(){
+
+    tracks.forEach(
+        (track,index) => {
+
+            if(!track.sourceNode){
+
+                try{
+
+                    setupChannelRouting(
+                        track,
+                        index
+                    );
+
+                }catch(error){
+
+                    console.error(
+                        "Audio routing error:",
+                        error
+                    );
+                }
+            }
+        }
+    );
+}
+
+
+/* =========================================================
+   LOAD FOLDER
+========================================================= */
+
+async function loadFolderFiles(
+    fileList
+){
+
+    showLoading(
+        "Reading folder..."
+    );
+
+
+    try{
+
+        const normalAudio =
+            [];
+
+        const zipFiles =
+            [];
+
+
+        for(
+            const file of Array.from(
+                fileList
+            )
+        ){
+
+            if(isAudioFile(file)){
+
+                normalAudio.push(
+                    file
+                );
+
+            }else if(
+                isZipFile(file)
+            ){
+
+                zipFiles.push(
+                    file
+                );
+            }
+        }
+
+
+        const allAudioFiles =
+            [
+                ...normalAudio
+            ];
+
+
+        for(
+            const zipFile of zipFiles
+        ){
+
+            showLoading(
+                "Opening " +
+                zipFile.name +
+                "..."
+            );
+
+
+            try{
+
+                const zip =
+                    await JSZip.loadAsync(
+                        zipFile
+                    );
+
+
+                const entries =
+                    Object.values(
+                        zip.files
+                    );
+
+
+                for(
+                    const entry of entries
+                ){
+
+                    if(entry.dir){
+                        continue;
+                    }
+
+
+                    const fakeFileName =
+                        entry.name
+                            .split("/")
+                            .pop();
+
+
+                    if(!isAudioFile({
+                        name:fakeFileName
+                    })){
+
+                        continue;
+                    }
+
+
+                    const blob =
+                        await entry.async(
+                            "blob"
+                        );
+
+
+                    const file =
+                        new File(
+                            [blob],
+                            fakeFileName,
+                            {
+                                type:
+                                    getAudioMimeType(
+                                        fakeFileName
+                                    )
+                            }
+                        );
+
+
+                    allAudioFiles.push(
+                        file
+                    );
+                }
+
+            }catch(error){
+
+                console.error(
+                    "ZIP error:",
+                    error
+                );
+
+                alert(
+                    "Could not read ZIP file: " +
+                    zipFile.name
+                );
+            }
+        }
+
+
+        if(
+            allAudioFiles.length === 0
+        ){
+
+            hideLoading();
+
+            alert(
+                "No supported audio files found."
+            );
+
+            return;
+        }
+
+
+        clearExistingTracks();
+
+
+        showLoading(
+            "Creating " +
+            allAudioFiles.length +
+            " players..."
+        );
+
+
+        allAudioFiles.forEach(
+            (file,index) => {
+
+                createTrack(
+                    file,
+                    index
+                );
+            }
+        );
+
+
+        initializeTrackRouting();
+
+
+        updateMaxDuration();
+
+        checkPlayButtonState();
+
+
+        /* LOCK SOURCE BUTTONS */
+
+        lockSourceButtons();
+
+
+    }catch(error){
+
+        console.error(error);
+
+        alert(
+            "Error loading folder."
+        );
+
+    }finally{
+
+        hideLoading();
+    }
+}
+
+
+/* =========================================================
+   LOAD FILES / ZIP
+========================================================= */
+
+async function loadSelectedFiles(
+    fileList
+){
+
+    showLoading(
+        "Loading selected files..."
+    );
+
+
+    try{
+
+        const normalAudio =
+            [];
+
+        const zipFiles =
+            [];
+
+
+        for(
+            const file of Array.from(
+                fileList
+            )
+        ){
+
+            if(isAudioFile(file)){
+
+                normalAudio.push(
+                    file
+                );
+
+            }else if(
+                isZipFile(file)
+            ){
+
+                zipFiles.push(
+                    file
+                );
+            }
+        }
+
+
+        const allAudioFiles =
+            [
+                ...normalAudio
+            ];
+
+
+        for(
+            const zipFile of zipFiles
+        ){
+
+            showLoading(
+                "Extracting " +
+                zipFile.name +
+                "..."
+            );
+
+
+            try{
+
+                const zip =
+                    await JSZip.loadAsync(
+                        zipFile
+                    );
+
+
+                const entries =
+                    Object.values(
+                        zip.files
+                    );
+
+
+                for(
+                    const entry of entries
+                ){
+
+                    if(entry.dir){
+                        continue;
+                    }
+
+
+                    const fakeFileName =
+                        entry.name
+                            .split("/")
+                            .pop();
+
+
+                    if(!isAudioFile({
+                        name:fakeFileName
+                    })){
+
+                        continue;
+                    }
+
+
+                    const blob =
+                        await entry.async(
+                            "blob"
+                        );
+
+
+                    const file =
+                        new File(
+                            [blob],
+                            fakeFileName,
+                            {
+                                type:
+                                    getAudioMimeType(
+                                        fakeFileName
+                                    )
+                            }
+                        );
+
+
+                    allAudioFiles.push(
+                        file
+                    );
+                }
+
+            }catch(error){
+
+                console.error(
+                    "ZIP error:",
+                    error
+                );
+
+                alert(
+                    "Could not read ZIP: " +
+                    zipFile.name
+                );
+            }
+        }
+
+
+        if(
+            allAudioFiles.length === 0
+        ){
+
+            hideLoading();
+
+            alert(
+                "No supported audio files selected."
+            );
+
+            return;
+        }
+
+
+        clearExistingTracks();
+
+
+        showLoading(
+            "Creating " +
+            allAudioFiles.length +
+            " players..."
+        );
+
+
+        allAudioFiles.forEach(
+            (file,index) => {
+
+                createTrack(
+                    file,
+                    index
+                );
+            }
+        );
+
+
+        initializeTrackRouting();
+
+
+        updateMaxDuration();
+
+        checkPlayButtonState();
+
+
+        /* LOCK SOURCE BUTTONS */
+
+        lockSourceButtons();
+
+
+    }catch(error){
+
+        console.error(error);
+
+        alert(
+            "Error loading files."
+        );
+
+    }finally{
+
+        hideLoading();
+    }
+}
+
+
+/* =========================================================
+   MIME
+========================================================= */
+
+function getAudioMimeType(
+    fileName
+){
+
+    const ext =
+        fileName
+            .toLowerCase()
+            .split(".")
+            .pop();
+
+
+    const map = {
+
+        mp3:"audio/mpeg",
+
+        wav:"audio/wav",
+
+        ogg:"audio/ogg",
+
+        flac:"audio/flac",
+
+        aac:"audio/aac",
+
+        m4a:"audio/mp4",
+
+        webm:"audio/webm",
+
+        opus:"audio/ogg"
+    };
+
+
+    return (
+        map[ext] ||
+        "audio/*"
+    );
+}
+
+
+/* =========================================================
+   MAX DURATION
+========================================================= */
+
+function updateMaxDuration(){
+
+    let maxDuration =
+        0;
+
+
+    tracks.forEach(
+        track => {
+
+            if(
+                track.isLoaded &&
+                isFinite(
+                    track.audio.duration
+                )
+            ){
+
+                maxDuration =
+                    Math.max(
+                        maxDuration,
+                        track.audio.duration
+                    );
+            }
+        }
+    );
+
+
+    const seekbar =
+        document.getElementById(
+            "masterSeekbar"
+        );
+
+
+    seekbar.max =
+        maxDuration;
+
+
+    seekbar.disabled =
+        tracks.length === 0 ||
+        maxDuration <= 0;
+
+
+    document.getElementById(
+        "totalTime"
+    ).textContent =
+        formatTime(
+            maxDuration
+        );
+}
+
+
+/* =========================================================
+   MASTER BUTTON STATE
+========================================================= */
+
+function checkPlayButtonState(){
+
+    const button =
+        document.getElementById(
+            "masterPlayBtn"
+        );
+
+
+    const hasLoaded =
+        tracks.some(
+            track =>
+                track.isLoaded
+        );
+
+
+    button.disabled =
+        !hasLoaded;
+}
+
+
+/* =========================================================
+   PLAY ALL
+========================================================= */
+
+async function playAll(){
+
+    if(
+        tracks.length === 0
+    ){
+        return;
+    }
+
+
+    const ctx =
+        getAudioContext();
+
+
+    if(!ctx){
+        return;
+    }
+
+
+    try{
+
+        if(
+            ctx.state ===
+            "suspended"
+        ){
+
+            await ctx.resume();
+        }
+
+    }catch(error){
+
+        console.error(error);
+    }
+
+
+    const startTime =
+        Number(
+            document
+                .getElementById(
+                    "masterSeekbar"
+                )
+                .value
+        );
+
+
+    tracks.forEach(
+        track => {
+
+            if(
+                !track.isLoaded
+            ){
+                return;
+            }
+
+
+            if(
+                isFinite(startTime) &&
+                startTime >= 0 &&
+                startTime <
+                    track.audio.duration
+            ){
+
+                try{
+
+                    track.audio.currentTime =
+                        startTime;
+
+                }catch(e){}
+            }
+        }
+    );
+
+
+    const promises =
+        [];
+
+
+    tracks.forEach(
+        (track,index) => {
+
+            if(
+                !track.isLoaded
+            ){
+                return;
+            }
+
+
+            updateChannelRouting(
+                index
+            );
+
+
+            const promise =
+                track.audio.play();
+
+
+            if(promise){
+
+                promises.push(
+                    promise.catch(
+                        error => {
+
+                            console.warn(
+                                "Play error:",
+                                error
+                            );
+
+                        }
+                    )
+                );
+            }
+        }
+    );
+
+
+    await Promise.all(
+        promises
+    );
+
+
+    isPlayingAll =
+        true;
+
+
+    updateMasterButton();
+
+
+    document.getElementById(
+        "masterStatus"
+    ).textContent =
+        "Playing";
+}
+
+
+/* =========================================================
+   PAUSE ALL
+========================================================= */
+
+function pauseAll(){
+
+    tracks.forEach(
+        track => {
+
+            try{
+
+                track.audio.pause();
+
+            }catch(e){}
+        }
+    );
+
+
+    isPlayingAll =
+        false;
+
+
+    updateMasterButton();
+
+
+    document.getElementById(
+        "masterStatus"
+    ).textContent =
+        "Paused";
+}
+
+
+/* =========================================================
+   MASTER TOGGLE
+========================================================= */
+
+async function toggleMasterPlay(){
+
+    if(isPlayingAll){
+
+        pauseAll();
+
+    }else{
+
+        await playAll();
+    }
+}
+
+
+/* =========================================================
+   MASTER BUTTON UI
+========================================================= */
+
+function updateMasterButton(){
+
+    const button =
+        document.getElementById(
+            "masterPlayBtn"
+        );
+
+
+    if(isPlayingAll){
+
+        button.textContent =
+            "⏸ Pause All";
+
+        button.classList.add(
+            "pause-mode"
+        );
+
+    }else{
+
+        button.textContent =
+            "▶ Play All";
+
+        button.classList.remove(
+            "pause-mode"
+        );
+    }
+}
+
+
+/* =========================================================
+   ALL ENDED
+========================================================= */
+
+function checkAllEnded(){
+
+    if(
+        tracks.length === 0
+    ){
+        return;
+    }
+
+
+    const anyPlaying =
+        tracks.some(
+            track =>
+                !track.audio.paused &&
+                !track.audio.ended
+        );
+
+
+    if(!anyPlaying){
+
+        isPlayingAll =
+            false;
+
+        updateMasterButton();
+
+
+        document.getElementById(
+            "masterStatus"
+        ).textContent =
+            "Ready";
+    }
+}
+
+
+/* =========================================================
+   MASTER SEEK
+========================================================= */
+
+document
+    .getElementById(
+        "masterSeekbar"
+    )
+    .addEventListener(
+        "input",
+        function(){
+
+            if(
+                masterUpdating
+            ){
+                return;
+            }
+
+
+            const time =
+                Number(
+                    this.value
+                );
+
+
+            tracks.forEach(
+                track => {
+
+                    if(
+                        track.isLoaded &&
+                        isFinite(
+                            track.audio.duration
+                        )
+                    ){
+
+                        try{
+
+                            track.audio.currentTime =
+                                Math.min(
+                                    time,
+                                    track.audio.duration
+                                );
+
+                        }catch(e){}
+                    }
+                }
+            );
+
+
+            document.getElementById(
+                "currentTime"
+            ).textContent =
+                formatTime(
+                    time
+                );
+        }
+    );
+
+
+/* =========================================================
+   ONLY MASTER PLAY / PAUSE CONTROL
+========================================================= */
+
+document
+    .getElementById(
+        "masterPlayBtn"
+    )
+    .addEventListener(
+        "click",
+        toggleMasterPlay
+    );
+
+
+/* =========================================================
+   FOLDER INPUT
+========================================================= */
+
+document
+    .getElementById(
+        "folderInput"
+    )
+    .addEventListener(
+        "change",
+        async function(){
+
+            if(
+                this.files.length > 0
+            ){
+
+                await loadFolderFiles(
+                    this.files
+                );
+            }
+
+            this.value =
+                "";
+        }
+    );
+
+
+/* =========================================================
+   FILE INPUT
+========================================================= */
+
+document
+    .getElementById(
+        "fileInput"
+    )
+    .addEventListener(
+        "change",
+        async function(){
+
+            if(
+                this.files.length > 0
+            ){
+
+                await loadSelectedFiles(
+                    this.files
+                );
+            }
+
+            this.value =
+                "";
+        }
+    );
+
+
+/* =========================================================
+   RESET
+========================================================= */
+
+document
+    .getElementById(
+        "resetBtn"
+    )
+    .addEventListener(
+        "click",
+        () => {
+
+            clearExistingTracks();
+
+        }
+    );
+
+
+/* =========================================================
+   MASTER TIME UPDATE
+========================================================= */
+
+setInterval(
+    () => {
+
+        if(
+            tracks.length === 0
+        ){
+            return;
+        }
+
+
+        const firstTrack =
+            tracks.find(
+                track =>
+                    track.isLoaded
+            );
+
+
+        if(!firstTrack){
+            return;
+        }
+
+
+        if(
+            !firstTrack.audio.paused &&
+            !firstTrack.audio.ended
+        ){
+
+            const current =
+                firstTrack.audio.currentTime;
+
+
+            masterUpdating =
+                true;
+
+
+            const seekbar =
+                document.getElementById(
+                    "masterSeekbar"
+                );
+
+
+            seekbar.value =
+                Math.min(
+                    current,
+                    Number(
+                        seekbar.max
+                    ) || current
+                );
+
+
+            document.getElementById(
+                "currentTime"
+            ).textContent =
+                formatTime(
+                    current
+                );
+
+
+            masterUpdating =
+                false;
+        }
+
+
+        checkAllEnded();
+
+    },
+    100
+);
+
+</script>
+
+</body>
+</html>
+```
