@@ -608,60 +608,14 @@ input[type="file"]{
 
 
 /* =========================================================
-   PLAYER CONTROLS
+   TRACK TIME
 ========================================================= */
 
-.player-controls{
-    display:flex;
-
-    align-items:center;
-
-    gap:9px;
-
-    margin-bottom:13px;
-}
-
-.track-play-btn{
-    flex:1;
-
-    padding:10px 14px;
-
-    border-radius:11px;
-
-    background:
-        linear-gradient(
-            135deg,
-            rgba(38,129,220,.9),
-            rgba(40,177,255,.72)
-        );
-
-    border-color:
-        rgba(83,185,255,.35);
-
-    box-shadow:
-        0 6px 20px rgba(30,130,220,.14);
-}
-
-.track-play-btn.pause{
-    background:
-        linear-gradient(
-            135deg,
-            rgba(177,45,68,.95),
-            rgba(255,90,110,.78)
-        );
-
-    border-color:
-        rgba(255,120,140,.3);
-}
-
 .track-time{
-    min-width:65px;
-
-    text-align:right;
-
     font-size:11px;
-
     color:#8c9bb1;
+    text-align:right;
+    margin:-5px 2px 12px;
 }
 
 
@@ -977,7 +931,7 @@ input[type="file"]{
         </h1>
 
         <div class="subtitle">
-            Synchronized Stereo Audio Console
+           Karaoke Stereo Audio Player
         </div>
 
     </div>
@@ -1121,11 +1075,10 @@ input[type="file"]{
 
 
     <div class="info">
-
-        Left / Right channels are independently controlled
-        for every player.
-
-    </div>
+    <a href="https://coding-master-suraj.github.io/hacker/" target="_blank" style="text-decoration: none; color: inherit;">
+        👤 Powered  by Coding Master Suraj
+    </a>
+</div>
 
 </div>
 
@@ -1831,14 +1784,7 @@ function createTrack(
     audio.addEventListener(
         "play",
         () => {
-
-            updateTrackButton(
-                index,
-                true
-            );
-
-
-            updateTrackStatus(
+updateTrackStatus(
                 index,
                 "Playing"
             );
@@ -1853,15 +1799,7 @@ function createTrack(
             if(audio.ended){
                 return;
             }
-
-
-            updateTrackButton(
-                index,
-                false
-            );
-
-
-            updateTrackStatus(
+updateTrackStatus(
                 index,
                 "Loaded"
             );
@@ -1872,14 +1810,7 @@ function createTrack(
     audio.addEventListener(
         "ended",
         () => {
-
-            updateTrackButton(
-                index,
-                false
-            );
-
-
-            updateTrackStatus(
+updateTrackStatus(
                 index,
                 "Ended"
             );
@@ -1939,53 +1870,6 @@ function updateTrackStatus(
 
         status.classList.add(
             "loaded"
-        );
-    }
-}
-
-
-/* =========================================================
-   TRACK BUTTON
-========================================================= */
-
-function updateTrackButton(
-    index,
-    playing
-){
-
-    const card =
-        document.querySelector(
-            `.track[data-index="${index}"]`
-        );
-
-
-    if(!card){
-        return;
-    }
-
-
-    const button =
-        card.querySelector(
-            ".track-play-btn"
-        );
-
-
-    if(playing){
-
-        button.textContent =
-            "⏸ Pause";
-
-        button.classList.add(
-            "pause"
-        );
-
-    }else{
-
-        button.textContent =
-            "▶ Play";
-
-        button.classList.remove(
-            "pause"
         );
     }
 }
@@ -2055,21 +1939,9 @@ function createTrackCard(
 
         </div>
 
-
-        <div class="player-controls">
-
-            <button
-                class="track-play-btn"
-            >
-                ▶ Play
-            </button>
-
-            <div class="track-time">
-                00:00
-            </div>
-
+        <div class="track-time">
+            00:00 / 00:00
         </div>
-
 
         <div class="channel-box">
 
@@ -2159,41 +2031,7 @@ function createTrackCard(
         card.querySelector(
             ".volume-value"
         );
-
-
-    const playButton =
-        card.querySelector(
-            ".track-play-btn"
-        );
-
-
-    /*
-        INDIVIDUAL SINGLE BUTTON
-
-        It controls all loaded tracks together,
-        keeping synchronization.
-    */
-
-    playButton.addEventListener(
-        "click",
-        async () => {
-
-            if(
-                tracks[index] &&
-                !tracks[index].audio.paused
-            ){
-
-                pauseAll();
-
-            }else{
-
-                await playAll();
-            }
-        }
-    );
-
-
-    /*
+/*
         LEFT
     */
 
